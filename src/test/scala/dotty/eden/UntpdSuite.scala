@@ -18,4 +18,7 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("a match { case 5 => ; case 6 => }")
   checkUntpd("a match { case Some(x) => x; case None => y }")
   checkUntpd("a match { case Some(x) => x; case _ => y }")
+  checkUntpd("a match { case m @ Some(x) => x; case _ => y }")
+  checkUntpd("a match { case m @ Some(t @ Some(x)) => x; case _ => y }")
+  checkUntpd("a match { case m : Int => x; case _ => y }")
 }

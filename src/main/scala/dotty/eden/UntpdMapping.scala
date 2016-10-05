@@ -117,4 +117,20 @@ class UntpdMapping(var mode: Loc) {
     }
   }
 
+  object PatBind {
+    def unapply(tree: Bind): Option[(TermName, Tree)] = {
+      if (tree.name.isTypeName) return None
+      val d.Bind(name, body) = tree
+      Some((name.asTermName, body))
+    }
+  }
+
+  object PatTyped {
+    def unapply(tree: Typed): Option[(Tree, Tree)] = {
+      if (mode != PatLoc) return None
+      val d.Typed(lhs, rhs) = tree
+      Some((lhs, rhs))
+    }
+  }
 }
+

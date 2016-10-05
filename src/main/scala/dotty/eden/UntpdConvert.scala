@@ -101,6 +101,16 @@ class UntpdConvert(initialMode: Loc) {
     case u.PatWildcard() =>
       m.Pat.Wildcard()
 
+    case u.PatBind(name, body) =>
+      val mlhs= m.Pat.Var.Term(m.Term.Name(name.show))
+      val mrhs = body.toMTree[m.Pat.Arg]
+      m.Pat.Bind(mlhs, mrhs)
+
+    case u.PatTyped(llhs, lrhs) =>
+      val mlrhs = llhs.toMTree[m.Pat]
+      val mrhs = lrhs.toMTree[m.Pat.Type] // dveim replaced
+      m.Pat.Typed(mlrhs, mrhs)
+
     // ============ DECLS ============
 
     // ============ DEFNS ============
