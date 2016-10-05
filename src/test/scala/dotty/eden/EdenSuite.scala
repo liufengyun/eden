@@ -19,9 +19,9 @@ trait EdenSuite extends FunSuite {
     test(code) {
       import scala.meta._
       val mTree: m.Tree = code.parse[m.Stat].get
+      println("meta:" + mTree.structure)
       val dTree: untpd.Tree = dottyParse(code)
       val convertedTree: m.Tree = Convert.toMTreeUntpd(dTree)
-      println("meta:" + mTree.structure)
       assert(mTree.structure == convertedTree.structure)
     }
   }

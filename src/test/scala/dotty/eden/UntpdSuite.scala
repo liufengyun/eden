@@ -7,6 +7,8 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("f(A.this)")
   checkUntpd("this.age")
   checkUntpd("f[Int](3)")
+  checkUntpd("f(x = 3)")
+  checkUntpd("f(x = 3, y = 6 * 8)")
   checkUntpd("a.f(this.age)")
   checkUntpd("a + b")
   checkUntpd("a + b + c + this.age")
