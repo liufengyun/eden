@@ -111,6 +111,13 @@ class UntpdConvert(initialMode: Loc) {
       val mrhs = lrhs.toMTree[m.Pat.Type] // dveim replaced
       m.Pat.Typed(mlrhs, mrhs)
 
+    case t: untpd.Alternative =>
+      // must have one alternative
+      val pats:+mpat = t.trees.map(toMTree[m.Pat])
+      pats.foldRight(mpat) { (pat, alt) =>
+        m.Pat.Alternative(pat, alt)
+      }
+
     // ============ DECLS ============
 
     // ============ DEFNS ============
