@@ -85,6 +85,13 @@ class UntpdMapping(var mode: Loc) {
     }
   }
 
+  object RepeatedParam {
+    def unapply(tree: Tree): Option[Ident] = tree match {
+      case d.Typed(ident: Ident, d.Ident(tpnme.WILDCARD_STAR)) => Some(ident)
+      case _ => None
+    }
+  }
+
   // ============ TYPES ============
   object TypeIdent {
     def unapply(tree: Ident): Option[TypeName] = {

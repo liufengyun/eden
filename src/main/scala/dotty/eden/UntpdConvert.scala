@@ -38,11 +38,14 @@ class UntpdConvert(initialMode: Loc) {
       val margs = args.map(toMTree[m.Term.Arg])
       m.Term.Apply(mfun, margs)
 
-
     case t: untpd.NamedArg =>
       val mname = m.Term.Name(t.name.show)
       val narg  = t.arg.toMTree[m.Term]
       m.Term.Arg.Named(mname, narg)
+
+    case u.RepeatedParam(name) =>
+      val mterm = m.Term.Name(name.show)
+      m.Term.Arg.Repeated(mterm)
 
     case t: untpd.TypeApply =>
       val mfun = t.fun.toMTree[m.Term]
