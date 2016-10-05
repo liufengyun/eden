@@ -73,8 +73,15 @@ class UntpdMapping(var mode: Loc) {
 
   object TermInfixOp {
     def unapply(tree: InfixOp): Option[(Tree, TermName, Tree)] = {
-      if (tree.op.isTypeName) return None
+      if (tree.op.isTypeName || mode != TermLoc) return None
       Some((tree.left, tree.op.asTermName, tree.right))
+    }
+  }
+
+  object TermPostfixOp {
+    def unapply(tree: PostfixOp): Option[(Tree, TermName)] = {
+      if (tree.op.isTypeName || mode != TermLoc) return None
+      Some((tree.od, tree.op.asTermName))
     }
   }
 

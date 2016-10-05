@@ -49,6 +49,11 @@ class UntpdConvert(initialMode: Loc) {
       val mright = right.toMTree[m.Term]
       m.Term.ApplyInfix(mleft, mop, Nil, List(mright))
 
+    case u.TermPostfixOp(left, op) =>
+      val mop = m.Term.Name(op.show)
+      val mleft = left.toMTree[m.Term]
+      m.Term.Select(mleft, mop)
+
     case t: untpd.Assign =>
       val mlhs = t.lhs.toMTree[m.Term.Ref]
       val mrhs = t.rhs.toMTree[m.Term]
@@ -69,6 +74,16 @@ class UntpdConvert(initialMode: Loc) {
 
     case t: untpd.Parens =>
       t.forwardTo.toMTree
+
+    case t: untpd.WhileDo =>
+      val mcond = t.cond.toMTree[m.Term]
+      val mbody = t.body.toMTree[m.Term]
+      m.Term.While(mcond, mbody)
+
+    case t: untpd.DoWhile =>
+      val mcond = t.cond.toMTree[m.Term]
+      val mbody = t.body.toMTree[m.Term]
+      m.Term.Do(mbody, mcond)
 
     // ============ TYPES ============
     case u.TypeIdent(name) =>
