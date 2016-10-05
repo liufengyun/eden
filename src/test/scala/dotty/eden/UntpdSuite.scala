@@ -16,4 +16,6 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("{ a = 1; b += 2 }")
   checkUntpd("if (cond) a else b")
   checkUntpd("a match { case 5 => ; case 6 => }")
+  checkUntpd("a match { case Some(x) => x; case None => y }")
+  checkUntpd("a match { case Some(x) => x; case _ => y }")
 }

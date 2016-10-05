@@ -2,7 +2,7 @@ package dotty.eden
 
 import dotty.tools.dotc.core.Constants._
 import dotty.tools.dotc.core.Types.Type
-import dotty.tools.dotc.ast.{ Trees => d }
+import dotty.tools.dotc.ast.{Trees => d}
 import dotty.tools.dotc.ast.untpd._
 import dotty.tools.dotc.core.Names._
 import dotty.tools.dotc.core.StdNames.nme
@@ -57,6 +57,7 @@ class UntpdMapping(var mode: Loc) {
 
   object TermIdent {
     def unapply(tree: Ident): Option[Name] = {
+      if (mode != TermLoc) return None
       val name = tree.name
       if (name.isTypeName || tree.name == nme.WILDCARD) None
       else Some(name)
@@ -86,11 +87,33 @@ class UntpdMapping(var mode: Loc) {
   }
 
   // ============ PATTERNS ============
-  object CaseDef {
-    def unapply(tree: CaseDef): Option[(Tree, Option[Tree], Tree)] = {
-      val lpat = tree.pat
-      val lguard = if (!tree.guard.isEmpty) Some(tree.guard) else None
-      Some((lpat, lguard, tree.body))
+  object PatExtract {
+    def unapply(tree: Tree): Option[(Tree, List[Tree], List[Tree])] = {
+      if (mode != PatLoc) return None
+
+      val (fun, targs, args) = tree match {
+        case d.Apply(d.TypeApply(fun, targs), args) => (fun, targs, args)
+        case d.Apply(fun, args) => (fun, Nil, args)
+        case _ => return None
+      }
+
+      Some((fun, targs, args))
+    }
+  }
+
+  object PatVarIdent {
+    def unapply(tree: Ident): Option[Name] = {
+      if (mode != PatLoc) return None
+      val name = tree.name
+      if (name.isTypeName || tree.name == nme.WILDCARD) None
+      else Some(name)
+    }
+  }
+
+  object PatWildcard {
+    def unapply(tree: Ident): Boolean = {
+      if (mode != PatLoc) return false
+      tree.name == nme.WILDCARD
     }
   }
 

@@ -17,16 +17,6 @@ case object ParamLoc extends Loc
 case object SelfLoc extends Loc
 
 object Convert {
-  // add .toMTree to untyped trees
-  private implicit class UntpdTreeWrapper(tree: untpd.Tree) {
-    def toMTree[T <: m.Tree](implicit ctx: Context): T = Convert.toMTreeUntpd[T](tree)
-  }
-
-  // make toMTreeUntpd type check
-  private implicit class TypeAdaper(tree: m.Tree) {
-    def as[T <: m.Tree]: T = tree.asInstanceOf[T]
-  }
-
   def toMTreeUntpd[T <: m.Tree](tree: untpd.Tree)(implicit ctx: Context): T = {
     new UntpdConvert(TermLoc).toMTree(tree)
   }

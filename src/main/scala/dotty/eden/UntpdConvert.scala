@@ -56,7 +56,10 @@ class UntpdConvert(initialMode: Loc) {
 
     case t: untpd.Block =>
       val mstats = (t.stats :+ t.expr).filterNot(_.isEmpty).map(toMTree[m.Stat])
-      m.Term.Block(mstats)
+      mstats match {
+        case Seq(stat) => stat
+        case _ => m.Term.Block (mstats)
+      }
 
     case t: untpd.If =>
       val mcond = t.cond.toMTree[m.Term]
@@ -82,6 +85,21 @@ class UntpdConvert(initialMode: Loc) {
       val mguard = if (t.guard.isEmpty) None else Some(t.guard.toMTree[m.Term])
       val mbody = t.body.toMTree[m.Term]
       m.Case(mpat, mguard, mbody)
+
+    case u.PatVarIdent(name) =>
+      if (name.show.charAt(0).isUpper)
+        m.Term.Name(name.show)
+      else
+        m.Pat.Var.Term(m.Term.Name(name.show))
+
+    case u.PatExtract(ref, targs, args) =>
+      val mref = u.withMode(TermLoc) { ref.toMTree[m.Term.Ref] }
+      val mtargs = targs.map(toMTree[m.Pat.Type])
+      val margs = args.map(toMTree[m.Pat.Arg])
+      m.Pat.Extract(mref, mtargs, margs)
+
+    case u.PatWildcard() =>
+      m.Pat.Wildcard()
 
     // ============ DECLS ============
 
