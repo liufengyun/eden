@@ -55,6 +55,18 @@ class UntpdMapping(var mode: Loc) {
     }
   }
 
+  object TermTypeApply {
+    def unapply(tree: Tree): Option[(Tree, List[Tree])] = {
+      tree match {
+        case d.TypeApply(fun, args) if mode == TermLoc =>
+          Some((fun, args))
+        case d.AppliedTypeTree(tpt, args) if mode == SuperCallLoc =>  // new List[Int](4)
+          Some((tpt, args))
+        case _ => None
+      }
+    }
+  }
+
   object TermIdent {
     def unapply(tree: Ident): Option[Name] = {
       if (mode != TermLoc) return None
@@ -92,10 +104,19 @@ class UntpdMapping(var mode: Loc) {
     }
   }
 
+  object TermNewNoTemplate {
+    def unapply(tree: Tree): Option[(Tree, List[Tree])] = tree match {
+      case d.Apply(d.Select(d.New(ctor), nme.CONSTRUCTOR), args) =>
+        Some((ctor, args))
+      case _ =>
+        None
+    }
+  }
+
   // ============ TYPES ============
   object TypeIdent {
     def unapply(tree: Ident): Option[TypeName] = {
-      if (tree.name.isTermName) return None
+      if (tree.name.isTermName || mode == SuperCallLoc) return None
       Some(tree.name.asTypeName)
     }
   }
@@ -144,6 +165,14 @@ class UntpdMapping(var mode: Loc) {
       if (mode != PatLoc) return None
       val d.Typed(lhs, rhs) = tree
       Some((lhs, rhs))
+    }
+  }
+
+  // ============ CTORS ============
+  object CtorName {
+    def unapply(tree: Ident): Option[TypeName] = {
+      if (!tree.name.isTypeName || mode != SuperCallLoc) return None
+      Some(tree.name.asTypeName)
     }
   }
 }

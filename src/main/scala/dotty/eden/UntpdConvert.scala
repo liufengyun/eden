@@ -33,6 +33,11 @@ class UntpdConvert(initialMode: Loc) {
       val mname = m.Term.Name(name.show)
       m.Term.Select(mpre, mname)
 
+    case u.TermNewNoTemplate(ctor, args) => // important to before TermApply
+      val mctor = u.withMode(SuperCallLoc) { ctor.toMTree[m.Term] }
+      val margs = args.map(toMTree[m.Term.Arg])
+      m.Term.New(m.Template(Nil, List(m.Term.Apply(mctor, margs)), m.Term.Param(Nil, m.Name.Anonymous(), None, None), None))
+
     case u.TermApply(fun, args) =>
       val mfun = fun.toMTree[m.Term]
       val margs = args.map(toMTree[m.Term.Arg])
@@ -47,9 +52,9 @@ class UntpdConvert(initialMode: Loc) {
       val mterm = m.Term.Name(name.show)
       m.Term.Arg.Repeated(mterm)
 
-    case t: untpd.TypeApply =>
-      val mfun = t.fun.toMTree[m.Term]
-      val mtargs = t.args.map(toMTree[m.Type])
+    case u.TermTypeApply(fun, args) =>
+      val mfun = fun.toMTree[m.Term]
+      val mtargs = u.withMode(TypeLoc) { args.map(toMTree[m.Type]) }
       m.Term.ApplyType(mfun, mtargs)
 
     case u.TermInfixOp(left, op, right) =>
@@ -94,9 +99,15 @@ class UntpdConvert(initialMode: Loc) {
       val mbody = t.body.toMTree[m.Term]
       m.Term.Do(mbody, mcond)
 
+
     // ============ TYPES ============
     case u.TypeIdent(name) =>
       m.Type.Name(name.show)
+
+    case t: untpd.AppliedTypeTree =>
+      val mtpt = u.withMode(TypeLoc) { t.tpt.toMTree[m.Type] }
+      val margs = u.withMode(TypeLoc) { t.args.map(toMTree[m.Type]) }
+      m.Type.Apply(mtpt, margs)
 
     // ============ PATTERNS ============
     case t: untpd.Match =>
@@ -149,6 +160,8 @@ class UntpdConvert(initialMode: Loc) {
     // ============ PKGS ============
 
     // ============ CTORS ============
+    case u.CtorName(name) =>
+      m.Ctor.Name(name.show)
 
     // ============ TEMPLATES ============
 
