@@ -9,4 +9,8 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("f[Int](3)")
   checkUntpd("a.f(this.age)")
   checkUntpd("a + b")
+  checkUntpd("a + b + c + this.age")
+  checkUntpd("a :+ b")
+  checkUntpd("a +: b")
+  checkUntpd("a = b")
 }

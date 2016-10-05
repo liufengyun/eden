@@ -55,6 +55,11 @@ object Convert {
       val mright = right.toMTree[m.Term]
       m.Term.ApplyInfix(mleft, mop, Nil, List(mright))
 
+    case t: untpd.Assign =>
+      val mlhs = t.lhs.toMTree[m.Term.Ref]
+      val mrhs = t.rhs.toMTree[m.Term]
+      m.Term.Assign(mlhs, mrhs)
+
     // ============ TYPES ============
     case u.TypeIdent(name) =>
       m.Type.Name(name.show)
