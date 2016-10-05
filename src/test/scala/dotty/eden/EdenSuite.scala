@@ -21,6 +21,7 @@ trait EdenSuite extends FunSuite {
       val mTree: m.Tree = code.parse[m.Stat].get
       val dTree: untpd.Tree = dottyParse(code)
       val convertedTree: m.Tree = Convert.toMTreeUntpd(dTree)
+      println("meta:" + mTree.structure)
       assert(mTree.structure == convertedTree.structure)
     }
   }
