@@ -7,6 +7,15 @@ import dotty.tools.dotc.core.Contexts.Context
 import dotty.eden.{UntpdMapping => u}
 import dotty.tools.dotc.core.StdNames._
 
+
+// outer context of an AST
+sealed trait Loc
+case object PatLoc extends Loc
+case object TypeLoc extends Loc
+case object TermLoc extends Loc
+case object ParamLoc extends Loc
+case object SelfLoc extends Loc
+
 object Convert {
   // add .toMTree to untyped trees
   private implicit class UntpdTreeWrapper(tree: untpd.Tree) {
@@ -18,67 +27,9 @@ object Convert {
     def as[T <: m.Tree]: T = tree.asInstanceOf[T]
   }
 
-  def toMTreeUntpd[T <: m.Tree](tree: untpd.Tree)(implicit ctx: Context): T = (tree match {
-    // ============ LITERALS ============
-    case u.Literal(v) =>
-      m.Lit(v)
-
-    // ============ TERMS ============
-    case t: untpd.This =>
-      if (t.qual == tpnme.EMPTY)
-        m.Term.This(m.Name.Anonymous())
-      else
-        m.Term.This(m.Name.Indeterminate(t.qual.show))
-
-    case u.TermIdent(name) =>
-      m.Term.Name(name.show)
-
-    case u.TermSelect(pre, name) =>
-      val mpre = pre.toMTree[m.Term]
-      val mname = m.Term.Name(name.show)
-      m.Term.Select(mpre, mname)
-
-    case u.TermApply(fun, args) =>
-      val mfun = fun.toMTree[m.Term]
-      val margs = args.map(toMTreeUntpd[m.Term.Arg])
-      m.Term.Apply(mfun, margs)
-
-    case t: untpd.TypeApply =>
-      val mfun = t.fun.toMTree[m.Term]
-      val mtargs = t.args.map(toMTreeUntpd[m.Type])
-      m.Term.ApplyType(mfun, mtargs)
-
-
-    case u.TermInfixOp(left, op, right) =>
-      val mop = m.Term.Name(op.show)
-      val mleft = left.toMTree[m.Term]
-      val mright = right.toMTree[m.Term]
-      m.Term.ApplyInfix(mleft, mop, Nil, List(mright))
-
-    case t: untpd.Assign =>
-      val mlhs = t.lhs.toMTree[m.Term.Ref]
-      val mrhs = t.rhs.toMTree[m.Term]
-      m.Term.Assign(mlhs, mrhs)
-
-    // ============ TYPES ============
-    case u.TypeIdent(name) =>
-      m.Type.Name(name.show)
-
-    // ============ PATTERNS ============
-
-    // ============ DECLS ============
-
-    // ============ DEFNS ============
-
-    // ============ PKGS ============
-
-    // ============ CTORS ============
-
-    // ============ TEMPLATES ============
-
-    // ============ MODIFIERS ============
-    case _ => println(tree); ???
-  }).as[T]
+  def toMTreeUntpd[T <: m.Tree](tree: untpd.Tree)(implicit ctx: Context): T = {
+    new UntpdConvert(TermLoc).toMTree(tree)
+  }
 
   def toMTreeTpd(tree: tpd.Tree): m.Tree = ???
 }

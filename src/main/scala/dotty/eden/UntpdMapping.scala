@@ -11,6 +11,13 @@ import dotty.tools.dotc.core.NameOps._
 
 /** Handles the mapping logic between dotty tree and meta trees
   *
+  * The mapping is stateful, in order to remember the outer context of an AST
+  *   - PatLoc
+  *   - TypeLoc
+  *   - TermLoc
+  *   - ParamLoc
+  *   - SelfLoc
+  *
   * Principle:
   *   1. Don't create any meta tree or do any conversion here!
   *   2. Don't create extractor if it always return Some(..)
@@ -19,7 +26,17 @@ import dotty.tools.dotc.core.NameOps._
   * happens in Convert.
   *
   **/
-object UntpdMapping {
+
+class UntpdMapping(var mode: Loc) {
+
+  def withMode[T](m: Loc)(f: => T) = {
+    val before = mode
+    mode = m
+    val res = f
+    mode = before
+    res
+  }
+
   // ============ LITERALS ============
   object Literal {
     def unapply(tree: Literal): Option[Any] = tree match {
@@ -33,7 +50,7 @@ object UntpdMapping {
   // ============ TERMS ============
   object TermApply {
     def unapply(tree: Apply): Option[(Tree, List[Tree])] = {
-      // TODO: check if it's term location
+      if (mode != TermLoc) return None
       Some((tree.fun, tree.args))
     }
   }
@@ -65,6 +82,15 @@ object UntpdMapping {
     def unapply(tree: Ident): Option[TypeName] = {
       if (tree.name.isTermName) return None
       Some(tree.name.asTypeName)
+    }
+  }
+
+  // ============ PATTERNS ============
+  object CaseDef {
+    def unapply(tree: CaseDef): Option[(Tree, Option[Tree], Tree)] = {
+      val lpat = tree.pat
+      val lguard = if (!tree.guard.isEmpty) Some(tree.guard) else None
+      Some((lpat, lguard, tree.body))
     }
   }
 
