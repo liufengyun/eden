@@ -28,6 +28,10 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("new List[Int](5)")
   checkUntpd("new List[List[Int]](List(5))")
   checkUntpd("new Map[Int, String]()")
+//  checkUntpd("new B { }")
+//  checkUntpd("new B { val a = 3 }")
+//  checkUntpd("new B { def f(x: Int): Int = x*x }")
+//  checkUntpd("new B(3) { println(5); def f(x: Int): Int = x*x }")
 
   // patterns
   checkUntpd("a match { case 5 => ; case 6 => }")
@@ -54,6 +58,20 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("var a, b: Int")
   checkUntpd("var a, b = 3")
   checkUntpd("var Some(Some(x)) = a")
+//  checkUntpd("type Age = Int")
+//  checkUntpd("type Age")
+//  checkUntpd("type Age <: Int :> Any")
+//  checkUntpd("type Container[T]")
+//  checkUntpd("type Container[T] = List[T]")
+//  checkUntpd("def f(x: Int): Int = x*x")
+//  checkUntpd("def f[T](x: T): Int = x")
+//  checkUntpd("def f[T <: Any :> Nothing : ClassTag](x: T): Int = x")
+//  checkUntpd("trait A { def test(x: Int): Boolean; val x: Int }")
+//  checkUntpd("class A[T] extends B with C { def test(x: Int): Boolean; val x: Int }")
+//  checkUntpd("class A[+T] extends B with C { def test(x: Int): Boolean; val x: Int }")
+//  checkUntpd("class A[-T] extends B with C { def test(x: Int): Boolean; val x: Int }")
+//  checkUntpd("class A[T <: Any](a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; val x: Int }")
+//  checkUntpd("object A extends B with C { def test(x: Int): Boolean; val x: Int }")
 
   // modifiers
 }
