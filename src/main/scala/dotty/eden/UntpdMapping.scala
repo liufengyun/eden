@@ -8,6 +8,8 @@ import dotty.tools.dotc.core.Names._
 import dotty.tools.dotc.core.StdNames.nme
 import dotty.tools.dotc.core.StdNames.tpnme
 import dotty.tools.dotc.core.NameOps._
+import dotty.tools.dotc.core.Contexts.Context
+import dotty.tools.dotc.core.Flags._
 
 /** Handles the mapping logic between dotty tree and meta trees
   *
@@ -175,5 +177,42 @@ class UntpdMapping(var mode: Loc) {
       Some(tree.name.asTypeName)
     }
   }
+
+  // ============ DEFNS ============
+  object ValDef {
+    def unapply(tree: ValDef)(implicit ctx: Context): Option[(Modifiers, Name, Option[Tree], Tree)] = {
+      val d.ValDef(name, tpt, _) = tree
+      if (tree.mods.flags.is(Mutable)) return None
+      val ltpt = if (!tpt.isEmpty) Some(tpt) else None
+      Some((tree.mods, name, ltpt, tree.rhs))
+    }
+  }
+
+  object VarDef {
+    def unapply(tree: ValDef)(implicit ctx: Context): Option[(Modifiers, Name, Option[Tree], Tree)] = {
+      val d.ValDef(name, tpt, _) = tree
+      if (!tree.mods.flags.is(Mutable) || tree.rhs.isEmpty) return None
+      val ltpt = if (!tpt.isEmpty) Some(tpt) else None
+      Some((tree.mods, name, ltpt, tree.rhs))
+    }
+  }
+
+  // ============ DECLS ============
+  object VarDcl {
+    def unapply(tree: ValDef)(implicit ctx: Context): Option[(Modifiers, Name, Tree)] = {
+      val d.ValDef(name, tpt, _) = tree
+      if (!tree.mods.flags.is(Mutable) || !tree.rhs.isEmpty) return None
+      Some((tree.mods, name, tpt))
+    }
+  }
+
+  object ValDcl {
+    def unapply(tree: ValDef)(implicit ctx: Context): Option[(Modifiers, Name, Tree)] = {
+      val d.ValDef(name, tpt, _) = tree
+      if (tree.mods.flags.is(Mutable) || !tree.rhs.isEmpty) return None
+      Some((tree.mods, name, tpt))
+    }
+  }
+
 }
 
