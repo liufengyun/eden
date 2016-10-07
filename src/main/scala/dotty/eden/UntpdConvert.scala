@@ -109,6 +109,12 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc) {
       val margs = u.withMode(TypeMode) { t.args.map(toMTree[m.Type]) }
       m.Type.Apply(mtpt, margs)
 
+    case u.TypeInfixOp(lhs, op, rhs) =>
+      val mop = m.Type.Name(op.show)
+      val mlhs = u.withs(TypeMode, ExprLoc) { lhs.toMTree[m.Type] }
+      val mrhs = u.withs(TypeMode, ExprLoc) { rhs.toMTree[m.Type] }
+      m.Type.ApplyInfix(mlhs, mop, mrhs)
+
     // ============ PATTERNS ============
     case t: d.Match =>
       val mscrut = t.selector.toMTree[m.Term]
@@ -162,6 +168,13 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc) {
       val mtpt = u.withMode(TypeMode) { tpt.toMTree[m.Type] }
       m.Decl.Val(Nil, List(m.Pat.Var.Term(m.Term.Name(name.show))), mtpt)
 
+    case t: d.DefDef if t.rhs.isEmpty =>
+      val mname = m.Term.Name(t.name.show)
+      val mtparams = u.withs(TypeMode, ParamLoc) { t.tparams.map(toMTree[m.Type.Param]) }
+      val mvparams = u.withs(TermMode, ParamLoc) { t.vparamss.map(_.map(toMTree[m.Term.Param]))}
+      val mtpt = u.withMode(TypeMode) { t.tpt.toMTree[m.Type] }
+      m.Decl.Def(Nil, mname, mtparams, mvparams, mtpt)
+
     case t: d.PatDef if t.rhs.isEmpty =>
       val mpats = u.withLoc(PatLoc) { t.pats.map(toMTree[m.Pat.Var.Term]) }
       val mtpt = u.withMode(TypeMode) { t.tpt.toMTree[m.Type] }
@@ -199,7 +212,7 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc) {
       else
         m.Defn.Val(Nil, mpats, mtpt, mrhs)
 
-    case t: d.DefDef =>
+    case t: d.DefDef if !t.rhs.isEmpty =>
       val mname = m.Term.Name(t.name.show)
       val mtparams = u.withs(TypeMode, ParamLoc) { t.tparams.map(toMTree[m.Type.Param]) }
       val mvparams = u.withs(TermMode, ParamLoc) { t.vparamss.map(_.map(toMTree[m.Term.Param]))}
@@ -208,9 +221,10 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc) {
       m.Defn.Def(Nil, mname, mtparams, mvparams, mtpt, mrhs)
 
     case u.ParamTerm(modifiers, name, tpt, default) =>
+      val mname = if (name == nme.WILDCARD) m.Name.Anonymous() else m.Term.Name(name.show)
       val mrhs = u.withs(TermMode, ExprLoc) { default.map(toMTree[m.Term]) }
       val mtpt = u.withMode(TypeMode) { tpt.map(toMTree[m.Type]) }
-      m.Term.Param(Nil, m.Term.Name(name.show), mtpt, mrhs)
+      m.Term.Param(Nil, mname, mtpt, mrhs)
 
     case t: d.TypeBoundsTree =>
       val mlo = if (t.lo.isEmpty) None else Some(u.withMode(TypeMode) { t.lo.toMTree[m.Type] })
@@ -230,11 +244,21 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc) {
       val mrhs = u.withs(TypeMode, ExprLoc) { rhs.toMTree[m.Type] }
       m.Defn.Type(Nil, mname, mtparams, mrhs)
 
-    case u.TypeInfixOp(lhs, op, rhs) =>
-      val mop = m.Type.Name(op.show)
-      val mlhs = u.withs(TypeMode, ExprLoc) { lhs.toMTree[m.Type] }
-      val mrhs = u.withs(TypeMode, ExprLoc) { rhs.toMTree[m.Type] }
-      m.Type.ApplyInfix(mlhs, mop, mrhs)
+    case t: d.Template =>
+      // d.Template(constr, parents, self, list[def])
+      // m.Template(early, parents, self, stats)
+      val mparents = u.withs(TermMode, SuperCallLoc) { t.parents.map(toMTree[m.Ctor.Call]) }
+      val mself = u.withs(TermMode, ParamLoc) { t.self.toMTree[m.Term.Param] }
+      val mstats = t.body.map(toMTree[m.Stat]) match { case Nil => None; case l => Some(l) }
+      m.Template(Nil, mparents, mself, mstats)
+
+    case u.TraitDef(modifiers, name, tparams, templ) =>
+      val mname = m.Type.Name(name.show)
+      val mtparams = u.withs(TypeMode, ParamLoc) { tparams.map(toMTree[m.Type.Param]) }
+      val ctorparams = u.withs(TermMode, ParamLoc) { templ.constr.vparamss.map(_.map(toMTree[m.Term.Param])) }
+      val mctor = m.Ctor.Primary(Nil, m.Ctor.Name("this"), ctorparams)
+      val mtempl = templ.toMTree[m.Template]
+      m.Defn.Trait(Nil, mname, mtparams, mctor, mtempl)
 
     // ============ PKGS ============
 

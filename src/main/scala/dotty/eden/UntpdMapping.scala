@@ -237,6 +237,33 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
       Some((tree.mods, tree.name, tree.tparams, tp))
     }
   }
+
+  object TraitDef {
+     def unapply(tree: TypeDef)(implicit ctx: Context): Option[(Modifiers, TypeName, List[TypeDef], Template)] = {
+      if (loc != ExprLoc || !tree.mods.flags.is(Trait)) return None
+
+      val templ = tree.rhs match {
+        case t: Template => t
+        case  _ => return None // only parse bounds
+      }
+
+      Some((tree.mods, tree.name, tree.tparams, templ))
+    }
+  }
+
+  object ClassDef {
+    def unapply(tree: TypeDef)(implicit ctx: Context): Option[(Modifiers, TypeName, List[TypeDef], Template)] = {
+      if (loc != ExprLoc || !tree.mods.flags.is(Module)) return None
+
+      val templ = tree.rhs match {
+        case t: Template => t
+        case  _ => return None // only parse bounds
+      }
+
+      Some((tree.mods, tree.name, tree.tparams, templ))
+    }
+  }
+
   // ============ DECLS ============
   object VarDcl {
     def unapply(tree: ValDef)(implicit ctx: Context): Option[(Modifiers, Name, Tree)] = {
