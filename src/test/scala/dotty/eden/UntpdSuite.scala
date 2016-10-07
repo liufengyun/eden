@@ -75,11 +75,13 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("type Container[T]")
   checkUntpd("type Container[T] = List[T]")
   checkUntpd("trait A { def test(x: Int): Boolean; val x: Int }")
-//  checkUntpd("class A[T] extends B with C { def test(x: Int): Boolean; val x: Int }")
-//  checkUntpd("class A[+T] extends B with C { def test(x: Int): Boolean; val x: Int }")
-//  checkUntpd("class A[-T] extends B with C { def test(x: Int): Boolean; val x: Int }")
-//  checkUntpd("class A[T <: Any](a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; val x: Int }")
-//  checkUntpd("class A[T <: C[T]](a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; val x: Int }")
+  checkUntpd("trait A { self: B => def test(x: Int): Boolean; val x: Int }")
+  checkUntpd("trait A[T] extends B with C { def test(x: Int): Boolean; val x: Int }")
+  checkUntpd("class A[T] extends B with C { def test(x: Int): Boolean; val x: Int }")
+  checkUntpd("class A[+T] extends B with C { def test(x: Int): Boolean; val x: Int }")
+  checkUntpd("class A[-T] extends B with C { def test(x: Int): Boolean; val x: Int }")
+  checkUntpd("class A[T <: Any](a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; val x: Int }")
+  checkUntpd("class A[T <: C[T]](a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; val x: Int }")
 //  checkUntpd("object A extends B with C { def test(x: Int): Boolean; val x: Int }")
 
   // nested definitions
@@ -106,4 +108,3 @@ class UntpdSuite extends EdenSuite {
 
 
 }
-

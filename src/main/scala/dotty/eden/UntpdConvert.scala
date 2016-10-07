@@ -36,7 +36,7 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc) {
 
     case u.TermNewNoTemplate(ctor, args) => // important to before TermApply
       val mctor = u.withLoc(SuperCallLoc) { ctor.toMTree[m.Term] }
-      val margs = args.map(toMTree[m.Term.Arg])
+      val margs = u.withLoc(ExprLoc) { args.map(toMTree[m.Term.Arg]) }
       m.Term.New(m.Template(Nil, List(m.Term.Apply(mctor, margs)), m.Term.Param(Nil, m.Name.Anonymous(), None, None), None))
 
     case u.TermApply(fun, args) =>
@@ -236,7 +236,12 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc) {
       val mtparams = u.withs(TypeMode, ParamLoc) { tparams.map(toMTree[m.Type.Param]) }
       val mbounds = u.withMode(TypeMode) { bounds.toMTree[m.Type.Bounds] }
       val mctxbounds = u.withs(TypeMode, ExprLoc) { ctxbounds.map(toMTree[m.Type]) }
-      m.Type.Param(Nil, mname, mtparams, mbounds, Nil/*view bounds*/, mctxbounds)
+      val mmods =
+        if (modifiers.flags.is(Covariant)) List(m.Mod.Covariant())
+        else if (modifiers.flags.is(Contravariant)) List(m.Mod.Contravariant())
+        else Nil
+
+      m.Type.Param(mmods, mname, mtparams, mbounds, Nil/*view bounds*/, mctxbounds)
 
     case u.TypeDef(modifiers, name, tparams, rhs) =>        // important to be after ParamType
       val mname = m.Type.Name(name.show)
@@ -245,20 +250,26 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc) {
       m.Defn.Type(Nil, mname, mtparams, mrhs)
 
     case t: d.Template =>
-      // d.Template(constr, parents, self, list[def])
-      // m.Template(early, parents, self, stats)
       val mparents = u.withs(TermMode, SuperCallLoc) { t.parents.map(toMTree[m.Ctor.Call]) }
       val mself = u.withs(TermMode, ParamLoc) { t.self.toMTree[m.Term.Param] }
       val mstats = t.body.map(toMTree[m.Stat]) match { case Nil => None; case l => Some(l) }
       m.Template(Nil, mparents, mself, mstats)
 
-    case u.TraitDef(modifiers, name, tparams, templ) =>
+    case u.ClassDef(modifiers, name, tparams, templ) =>
       val mname = m.Type.Name(name.show)
       val mtparams = u.withs(TypeMode, ParamLoc) { tparams.map(toMTree[m.Type.Param]) }
       val ctorparams = u.withs(TermMode, ParamLoc) { templ.constr.vparamss.map(_.map(toMTree[m.Term.Param])) }
       val mctor = m.Ctor.Primary(Nil, m.Ctor.Name("this"), ctorparams)
       val mtempl = templ.toMTree[m.Template]
-      m.Defn.Trait(Nil, mname, mtparams, mctor, mtempl)
+      if (modifiers.is(Trait))
+        m.Defn.Trait(Nil, mname, mtparams, mctor, mtempl)
+      else
+        m.Defn.Class(Nil, mname, mtparams, mctor, mtempl)
+
+    case u.SuperCall(ctor, args) =>
+      val mctor = u.withLoc(SuperCallLoc) { ctor.toMTree[m.Term] }
+      val margs = u.withLoc(ExprLoc) { args.map(toMTree[m.Term.Arg]) }
+      m.Term.Apply(mctor, margs)
 
     // ============ PKGS ============
 

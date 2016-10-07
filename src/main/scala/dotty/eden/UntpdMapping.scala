@@ -125,7 +125,7 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
 
   object TermNewNoTemplate {
     def unapply(tree: Tree): Option[(Tree, List[Tree])] = tree match {
-      case d.Apply(d.Select(d.New(ctor), nme.CONSTRUCTOR), args) =>
+      case d.Apply(d.Select(d.New(ctor), nme.CONSTRUCTOR), args) if loc != SuperCallLoc =>
         Some((ctor, args))
       case _ =>
         None
@@ -238,29 +238,30 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
     }
   }
 
-  object TraitDef {
-     def unapply(tree: TypeDef)(implicit ctx: Context): Option[(Modifiers, TypeName, List[TypeDef], Template)] = {
-      if (loc != ExprLoc || !tree.mods.flags.is(Trait)) return None
+  object ClassDef {
+    def unapply(tree: TypeDef)(implicit ctx: Context): Option[(Modifiers, TypeName, List[TypeDef], Template)] = {
+      if (loc != ExprLoc) return None
 
       val templ = tree.rhs match {
         case t: Template => t
         case  _ => return None // only parse bounds
       }
 
-      Some((tree.mods, tree.name, tree.tparams, templ))
+      // Note: tree.tparams can only get type params for type def, not class/trait definition
+      Some((tree.mods, tree.name, templ.constr.tparams, templ))
     }
   }
 
-  object ClassDef {
-    def unapply(tree: TypeDef)(implicit ctx: Context): Option[(Modifiers, TypeName, List[TypeDef], Template)] = {
-      if (loc != ExprLoc || !tree.mods.flags.is(Module)) return None
+  object SuperCall {
+    def unapply(tree: Tree): Option[(Tree, List[Tree])] = {
+      if (loc != SuperCallLoc) return None
 
-      val templ = tree.rhs match {
-        case t: Template => t
-        case  _ => return None // only parse bounds
+      tree match {
+        case d.Apply(d.Select(d.New(ctor), nme.CONSTRUCTOR), args) =>
+          Some((ctor, args))
+        case _ =>
+          None
       }
-
-      Some((tree.mods, tree.name, tree.tparams, templ))
     }
   }
 
@@ -325,4 +326,3 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
     }
   }
 }
-
