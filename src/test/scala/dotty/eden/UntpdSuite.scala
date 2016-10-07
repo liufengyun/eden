@@ -61,6 +61,13 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("def f(x: Int): Int = x*x")
   checkUntpd("def f(x: Int = 5): Int = x*x")
   checkUntpd("def f(x: Int = 5)(y: Int): Int = x*y")
+  checkUntpd("def f[T](x: T): Int = x")
+  checkUntpd("def f[T >: Nothing <: Any ](x: T): Int = x")
+  checkUntpd("def f[T :A](x: T): Int = x")
+  checkUntpd("def f[T :A :B](x: T): Int = x")
+  checkUntpd("def f[T :A[Int]](x: T): Int = x")
+  // checkUntpd("def f[T, M[_]](x: M[T]): M[T] = x")  //TODO: dotty AST doesn't contain the _
+  // checkUntpd("def f[T, M[A]](x: M[T]): M[T] = x")  // TODO: dotty AST doesn't contain A
 //  checkUntpd("type Age = Int")
 //  checkUntpd("type Age")
 //  checkUntpd("type Age <: Int :> Any")

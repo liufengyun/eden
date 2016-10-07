@@ -205,6 +205,14 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc) {
       val mtpt = u.withMode(TypeMode) { tpt.map(toMTree[m.Type]) }
       m.Term.Param(Nil, m.Term.Name(name.show), mtpt, mrhs)
 
+    case u.ParamType(modifiers, name, tparams, lo, hi, ctxbounds) =>
+      // Type.Param(Nil, Type.Name("T"), Nil, Type.Bounds(None, None), Nil, Nil)
+      val mname = m.Type.Name(name.show)
+      val mtparams = u.withs(TypeMode, ParamLoc) { tparams.map(toMTree[m.Type.Param]) }
+      val mlo = u.withs(TypeMode, ExprLoc) { lo.map(toMTree[m.Type]) }
+      val mhi = u.withs(TypeMode, ExprLoc) { hi.map(toMTree[m.Type]) }
+      val mctxbounds = u.withs(TypeMode, ExprLoc) { ctxbounds.map(toMTree[m.Type]) }
+      m.Type.Param(Nil, mname, mtparams, m.Type.Bounds(mlo, mhi), Nil/*view bounds*/, mctxbounds)
 
     // ============ PKGS ============
 

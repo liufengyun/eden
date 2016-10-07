@@ -255,5 +255,24 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
     }
   }
 
+  object ParamType {
+    def unapply(tree: TypeDef)(implicit ctx: Context): Option[(Modifiers, TypeName, List[TypeDef], Option[Tree], Option[Tree], List[Tree])] = {
+      if (loc != ParamLoc) return None
+
+      val (lo, hi, ctxBounds) = tree.rhs match {
+        case ContextBounds(d.TypeBoundsTree(lo, hi), cxBounds) =>
+          val cbs = cxBounds.map {
+            case d.AppliedTypeTree(ctx, _) => ctx
+            case t => throw new Exception("unexpected tree: " + t)
+          }
+          (lo, hi, cbs)
+        case d.TypeBoundsTree(lo, hi) => (lo, hi, Nil)
+      }
+
+      val optlo = if (lo.isEmpty) None else Some(lo)
+      val opthi = if (hi.isEmpty) None else Some(hi)
+      Some((tree.mods, tree.name, Nil, optlo, opthi, ctxBounds))
+    }
+  }
 }
 
