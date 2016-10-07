@@ -224,6 +224,19 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
     }
   }
 
+  // no template
+  object TypeDef {
+    def unapply(tree: TypeDef)(implicit ctx: Context): Option[(Modifiers, TypeName, List[TypeDef], Tree)] = {
+      if (loc == ParamLoc) return None
+
+      val tp = tree.rhs match {
+        case _: Template | _: TypeBoundsTree | EmptyTree => return None // only parse bounds
+        case tp => tp
+      }
+
+      Some((tree.mods, tree.name, tree.tparams, tp))
+    }
+  }
   // ============ DECLS ============
   object VarDcl {
     def unapply(tree: ValDef)(implicit ctx: Context): Option[(Modifiers, Name, Tree)] = {
@@ -243,6 +256,18 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
     }
   }
 
+  object TypeDcl {
+    def unapply(tree: TypeDef)(implicit ctx: Context): Option[(Modifiers, TypeName, List[TypeDef], Tree)] = {
+      if (loc == ParamLoc) return None
+
+      val tp = tree.rhs match {
+        case tp: TypeBoundsTree => tp
+        case _ => return None
+      }
+
+      Some((tree.mods, tree.name, tree.tparams, tp))
+    }
+  }
   // ============ PARAMS ============
   object ParamTerm {
     def unapply(tree: ValDef)(implicit ctx: Context): Option[(Modifiers, Name, Option[Tree], Option[Tree])] = {
@@ -256,22 +281,20 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
   }
 
   object ParamType {
-    def unapply(tree: TypeDef)(implicit ctx: Context): Option[(Modifiers, TypeName, List[TypeDef], Option[Tree], Option[Tree], List[Tree])] = {
+    def unapply(tree: TypeDef)(implicit ctx: Context): Option[(Modifiers, TypeName, List[TypeDef], Tree, List[Tree])] = {
       if (loc != ParamLoc) return None
 
-      val (lo, hi, ctxBounds) = tree.rhs match {
-        case ContextBounds(d.TypeBoundsTree(lo, hi), cxBounds) =>
+      val (bounds, ctxBounds) = tree.rhs match {
+        case ContextBounds(bounds, cxBounds) =>
           val cbs = cxBounds.map {
             case d.AppliedTypeTree(ctx, _) => ctx
             case t => throw new Exception("unexpected tree: " + t)
           }
-          (lo, hi, cbs)
-        case d.TypeBoundsTree(lo, hi) => (lo, hi, Nil)
+          (bounds, cbs)
+        case bounds: TypeBoundsTree => (bounds, Nil)
       }
 
-      val optlo = if (lo.isEmpty) None else Some(lo)
-      val opthi = if (hi.isEmpty) None else Some(hi)
-      Some((tree.mods, tree.name, Nil, optlo, opthi, ctxBounds))
+      Some((tree.mods, tree.name, tree.tparams, bounds, ctxBounds))
     }
   }
 }

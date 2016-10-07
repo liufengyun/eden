@@ -30,8 +30,9 @@ trait EdenSuite extends FunSuite {
       def debug = {
         println("<------------")
         println("code:" + code)
-        println("meta:" + mTree.structure)
         println("dotty:" + dTree)
+        println("meta:" + mTree.structure)
+        if (convertedTree != null) println("conv:" + convertedTree.structure)
         println("------------>")
       }
 

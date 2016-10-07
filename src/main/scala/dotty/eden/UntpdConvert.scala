@@ -171,6 +171,13 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc) {
       else
         m.Decl.Val(Nil, mpats, mtpt)
 
+    case u.TypeDcl(modifiers, name, tparams, bounds) =>
+      val mname = m.Type.Name(name.show)
+      val mtparams = u.withs(TypeMode, ParamLoc) { tparams.map(toMTree[m.Type.Param]) }
+      val mbounds = u.withs(TypeMode, ExprLoc) { bounds.toMTree[m.Type.Bounds] }
+      m.Decl.Type(Nil, mname, mtparams, mbounds)
+
+
     // ============ DEFNS ============
     case u.ValDef(modifiers, name, tpt, rhs) =>
       val mrhs = u.withMode(TermMode) { rhs.toMTree[m.Term] }
@@ -205,14 +212,29 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc) {
       val mtpt = u.withMode(TypeMode) { tpt.map(toMTree[m.Type]) }
       m.Term.Param(Nil, m.Term.Name(name.show), mtpt, mrhs)
 
-    case u.ParamType(modifiers, name, tparams, lo, hi, ctxbounds) =>
-      // Type.Param(Nil, Type.Name("T"), Nil, Type.Bounds(None, None), Nil, Nil)
+    case t: d.TypeBoundsTree =>
+      val mlo = if (t.lo.isEmpty) None else Some(u.withMode(TypeMode) { t.lo.toMTree[m.Type] })
+      val mhi = if (t.hi.isEmpty) None else Some(u.withMode(TypeMode) { t.hi.toMTree[m.Type] })
+      m.Type.Bounds(mlo, mhi)
+
+    case u.ParamType(modifiers, name, tparams, bounds, ctxbounds) =>
+      val mname = if (name.startsWith(nme.USCORE_PARAM_PREFIX)) m.Name.Anonymous() else m.Type.Name(name.show)
+      val mtparams = u.withs(TypeMode, ParamLoc) { tparams.map(toMTree[m.Type.Param]) }
+      val mbounds = u.withMode(TypeMode) { bounds.toMTree[m.Type.Bounds] }
+      val mctxbounds = u.withs(TypeMode, ExprLoc) { ctxbounds.map(toMTree[m.Type]) }
+      m.Type.Param(Nil, mname, mtparams, mbounds, Nil/*view bounds*/, mctxbounds)
+
+    case u.TypeDef(modifiers, name, tparams, rhs) =>        // important to be after ParamType
       val mname = m.Type.Name(name.show)
       val mtparams = u.withs(TypeMode, ParamLoc) { tparams.map(toMTree[m.Type.Param]) }
-      val mlo = u.withs(TypeMode, ExprLoc) { lo.map(toMTree[m.Type]) }
-      val mhi = u.withs(TypeMode, ExprLoc) { hi.map(toMTree[m.Type]) }
-      val mctxbounds = u.withs(TypeMode, ExprLoc) { ctxbounds.map(toMTree[m.Type]) }
-      m.Type.Param(Nil, mname, mtparams, m.Type.Bounds(mlo, mhi), Nil/*view bounds*/, mctxbounds)
+      val mrhs = u.withs(TypeMode, ExprLoc) { rhs.toMTree[m.Type] }
+      m.Defn.Type(Nil, mname, mtparams, mrhs)
+
+    case u.TypeInfixOp(lhs, op, rhs) =>
+      val mop = m.Type.Name(op.show)
+      val mlhs = u.withs(TypeMode, ExprLoc) { lhs.toMTree[m.Type] }
+      val mrhs = u.withs(TypeMode, ExprLoc) { rhs.toMTree[m.Type] }
+      m.Type.ApplyInfix(mlhs, mop, mrhs)
 
     // ============ PKGS ============
 

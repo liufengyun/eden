@@ -66,13 +66,14 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("def f[T :A](x: T): Int = x")
   checkUntpd("def f[T :A :B](x: T): Int = x")
   checkUntpd("def f[T :A[Int]](x: T): Int = x")
-  // checkUntpd("def f[T, M[_]](x: M[T]): M[T] = x")  //TODO: dotty AST doesn't contain the _
-  // checkUntpd("def f[T, M[A]](x: M[T]): M[T] = x")  // TODO: dotty AST doesn't contain A
-//  checkUntpd("type Age = Int")
-//  checkUntpd("type Age")
-//  checkUntpd("type Age <: Int :> Any")
-//  checkUntpd("type Container[T]")
-//  checkUntpd("type Container[T] = List[T]")
+  checkUntpd("def f[T, M[_]](x: M[T]): M[T] = x")  //TODO: dotty AST doesn't contain the _
+  checkUntpd("def f[T, M[A]](x: M[T]): M[T] = x")
+  checkUntpd("type Age = Int")
+  checkUntpd("type Age")
+  checkUntpd("type Age >: Int <: Any")
+  checkUntpd("type Age <: Int + Boolean")
+  checkUntpd("type Container[T]")
+  checkUntpd("type Container[T] = List[T]")
 //  checkUntpd("trait A { def test(x: Int): Boolean; val x: Int }")
 //  checkUntpd("class A[T] extends B with C { def test(x: Int): Boolean; val x: Int }")
 //  checkUntpd("class A[+T] extends B with C { def test(x: Int): Boolean; val x: Int }")
