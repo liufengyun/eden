@@ -13,6 +13,7 @@ sealed trait Loc
 case object ExprLoc extends Loc
 case object PatLoc extends Loc
 case object SuperCallLoc extends Loc
+case object ParamLoc extends Loc
 
 sealed trait Mode
 case object TermMode extends Mode

@@ -192,9 +192,19 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc) {
       else
         m.Defn.Val(Nil, mpats, mtpt, mrhs)
 
-//    case t: d.DefDef =>
-//      val name = m.Term.Name(t.name.show)
-//      val params = t.tparams.
+    case t: d.DefDef =>
+      val mname = m.Term.Name(t.name.show)
+      val mtparams = u.withs(TypeMode, ParamLoc) { t.tparams.map(toMTree[m.Type.Param]) }
+      val mvparams = u.withs(TermMode, ParamLoc) { t.vparamss.map(_.map(toMTree[m.Term.Param]))}
+      val mtpt = if (t.tpt.isEmpty) None else Some(u.withMode(TypeMode) { t.tpt.toMTree[m.Type] })
+      val mrhs = u.withs(TermMode, ExprLoc) { t.rhs.toMTree[m.Term] }
+      m.Defn.Def(Nil, mname, mtparams, mvparams, mtpt, mrhs)
+
+    case u.ParamTerm(modifiers, name, tpt, default) =>
+      val mrhs = u.withs(TermMode, ExprLoc) { default.map(toMTree[m.Term]) }
+      val mtpt = u.withMode(TypeMode) { tpt.map(toMTree[m.Type]) }
+      m.Term.Param(Nil, m.Term.Name(name.show), mtpt, mrhs)
+
 
     // ============ PKGS ============
 

@@ -34,6 +34,11 @@ import dotty.tools.dotc.core.Flags._
 
 class UntpdMapping(var mode: Mode, var loc: Loc) {
 
+  // with is keyword
+  def withs[T](m: Mode, l: Loc)(f: => T) = {
+    this.withMode(m) { this.withLoc(l) {  f } }
+  }
+
   def withMode[T](m: Mode)(f: => T) = {
     val before = mode
     mode = m
@@ -135,6 +140,14 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
     }
   }
 
+  object TypeInfixOp {
+    def unapply(tree: InfixOp): Option[(Tree, TypeName, Tree)] = {
+      if (mode != TypeMode) return None
+      Some((tree.left, tree.op.asTypeName, tree.right))
+    }
+  }
+
+
   // ============ PATTERNS ============
   object PatExtract {
     def unapply(tree: Tree): Option[(Tree, List[Tree], List[Tree])] = {
@@ -193,8 +206,9 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
   // ============ DEFNS ============
   object ValDef {
     def unapply(tree: ValDef)(implicit ctx: Context): Option[(Modifiers, Name, Option[Tree], Tree)] = {
+      if (loc != ExprLoc || tree.mods.flags.is(Mutable) || tree.rhs.isEmpty) return None
+
       val d.ValDef(name, tpt, _) = tree
-      if (tree.mods.flags.is(Mutable)) return None
       val ltpt = if (!tpt.isEmpty) Some(tpt) else None
       Some((tree.mods, name, ltpt, tree.rhs))
     }
@@ -202,8 +216,9 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
 
   object VarDef {
     def unapply(tree: ValDef)(implicit ctx: Context): Option[(Modifiers, Name, Option[Tree], Tree)] = {
+      if (loc != ExprLoc || !tree.mods.flags.is(Mutable) || tree.rhs.isEmpty) return None
+
       val d.ValDef(name, tpt, _) = tree
-      if (!tree.mods.flags.is(Mutable) || tree.rhs.isEmpty) return None
       val ltpt = if (!tpt.isEmpty) Some(tpt) else None
       Some((tree.mods, name, ltpt, tree.rhs))
     }
@@ -212,17 +227,31 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
   // ============ DECLS ============
   object VarDcl {
     def unapply(tree: ValDef)(implicit ctx: Context): Option[(Modifiers, Name, Tree)] = {
+      if (loc != ExprLoc || !tree.mods.flags.is(Mutable) || !tree.rhs.isEmpty) return None
+
       val d.ValDef(name, tpt, _) = tree
-      if (!tree.mods.flags.is(Mutable) || !tree.rhs.isEmpty) return None
       Some((tree.mods, name, tpt))
     }
   }
 
   object ValDcl {
     def unapply(tree: ValDef)(implicit ctx: Context): Option[(Modifiers, Name, Tree)] = {
+      if (loc != ExprLoc || tree.mods.flags.is(Mutable) || !tree.rhs.isEmpty) return None
+
       val d.ValDef(name, tpt, _) = tree
-      if (tree.mods.flags.is(Mutable) || !tree.rhs.isEmpty) return None
       Some((tree.mods, name, tpt))
+    }
+  }
+
+  // ============ PARAMS ============
+  object ParamTerm {
+    def unapply(tree: ValDef)(implicit ctx: Context): Option[(Modifiers, Name, Option[Tree], Option[Tree])] = {
+      if (loc != ParamLoc) return None
+
+      val d.ValDef(name, tpt, _) = tree
+      val optTpt = if (tpt.isEmpty) None else Some(tpt)
+      val optRhs = if (tree.rhs.isEmpty) None else Some(tree.rhs)
+      Some((tree.mods, name, optTpt, optRhs))
     }
   }
 
