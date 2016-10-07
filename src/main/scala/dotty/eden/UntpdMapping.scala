@@ -14,11 +14,14 @@ import dotty.tools.dotc.core.Flags._
 /** Handles the mapping logic between dotty tree and meta trees
   *
   * The mapping is stateful, in order to remember the outer context of an AST
+  *
+  *   - TypeMode
+  *   - TermMode
+  *
   *   - PatLoc
-  *   - TypeLoc
-  *   - TermLoc
   *   - ParamLoc
   *   - SelfLoc
+  *   - SuperCallLoc
   *
   * Principle:
   *   1. Don't create any meta tree or do any conversion here!
@@ -29,13 +32,21 @@ import dotty.tools.dotc.core.Flags._
   *
   **/
 
-class UntpdMapping(var mode: Loc) {
+class UntpdMapping(var mode: Mode, var loc: Loc) {
 
-  def withMode[T](m: Loc)(f: => T) = {
+  def withMode[T](m: Mode)(f: => T) = {
     val before = mode
     mode = m
     val res = f
     mode = before
+    res
+  }
+
+  def withLoc[T](l: Loc)(f: => T) = {
+    val before = loc
+    loc = l
+    val res = f
+    loc = before
     res
   }
 
@@ -52,17 +63,18 @@ class UntpdMapping(var mode: Loc) {
   // ============ TERMS ============
   object TermApply {
     def unapply(tree: Apply): Option[(Tree, List[Tree])] = {
-      if (mode != TermLoc) return None
+      if (loc != ExprLoc) return None
       Some((tree.fun, tree.args))
     }
   }
 
   object TermTypeApply {
     def unapply(tree: Tree): Option[(Tree, List[Tree])] = {
+      if (mode == TypeMode) return None
       tree match {
-        case d.TypeApply(fun, args) if mode == TermLoc =>
+        case d.TypeApply(fun, args) if loc == ExprLoc =>
           Some((fun, args))
-        case d.AppliedTypeTree(tpt, args) if mode == SuperCallLoc =>  // new List[Int](4)
+        case d.AppliedTypeTree(tpt, args) if loc == SuperCallLoc =>  // new List[Int](4)
           Some((tpt, args))
         case _ => None
       }
@@ -71,7 +83,7 @@ class UntpdMapping(var mode: Loc) {
 
   object TermIdent {
     def unapply(tree: Ident): Option[Name] = {
-      if (mode != TermLoc) return None
+      if (loc != ExprLoc || mode != TermMode) return None
       val name = tree.name
       if (name.isTypeName || tree.name == nme.WILDCARD) None
       else Some(name)
@@ -87,14 +99,14 @@ class UntpdMapping(var mode: Loc) {
 
   object TermInfixOp {
     def unapply(tree: InfixOp): Option[(Tree, TermName, Tree)] = {
-      if (tree.op.isTypeName || mode != TermLoc) return None
+      if (tree.op.isTypeName || loc != ExprLoc || mode != TermMode) return None
       Some((tree.left, tree.op.asTermName, tree.right))
     }
   }
 
   object TermPostfixOp {
     def unapply(tree: PostfixOp): Option[(Tree, TermName)] = {
-      if (tree.op.isTypeName || mode != TermLoc) return None
+      if (tree.op.isTypeName || mode != TermMode || loc != ExprLoc) return None
       Some((tree.od, tree.op.asTermName))
     }
   }
@@ -118,7 +130,7 @@ class UntpdMapping(var mode: Loc) {
   // ============ TYPES ============
   object TypeIdent {
     def unapply(tree: Ident): Option[TypeName] = {
-      if (tree.name.isTermName || mode == SuperCallLoc) return None
+      if (tree.name.isTermName || mode != TypeMode) return None
       Some(tree.name.asTypeName)
     }
   }
@@ -126,7 +138,7 @@ class UntpdMapping(var mode: Loc) {
   // ============ PATTERNS ============
   object PatExtract {
     def unapply(tree: Tree): Option[(Tree, List[Tree], List[Tree])] = {
-      if (mode != PatLoc) return None
+      if (loc != PatLoc) return None
 
       val (fun, targs, args) = tree match {
         case d.Apply(d.TypeApply(fun, targs), args) => (fun, targs, args)
@@ -140,7 +152,7 @@ class UntpdMapping(var mode: Loc) {
 
   object PatVarIdent {
     def unapply(tree: Ident): Option[Name] = {
-      if (mode != PatLoc) return None
+      if (loc != PatLoc || mode != TermMode) return None
       val name = tree.name
       if (name.isTypeName || tree.name == nme.WILDCARD) None
       else Some(name)
@@ -149,14 +161,14 @@ class UntpdMapping(var mode: Loc) {
 
   object PatWildcard {
     def unapply(tree: Ident): Boolean = {
-      if (mode != PatLoc) return false
+      if (loc != PatLoc || mode != TermMode) return false
       tree.name == nme.WILDCARD
     }
   }
 
   object PatBind {
     def unapply(tree: Bind): Option[(TermName, Tree)] = {
-      if (tree.name.isTypeName) return None
+      if (loc != PatLoc || mode != TermMode) return None
       val d.Bind(name, body) = tree
       Some((name.asTermName, body))
     }
@@ -164,7 +176,7 @@ class UntpdMapping(var mode: Loc) {
 
   object PatTyped {
     def unapply(tree: Typed): Option[(Tree, Tree)] = {
-      if (mode != PatLoc) return None
+      if (loc != PatLoc || mode != TermMode) return None
       val d.Typed(lhs, rhs) = tree
       Some((lhs, rhs))
     }
@@ -173,7 +185,7 @@ class UntpdMapping(var mode: Loc) {
   // ============ CTORS ============
   object CtorName {
     def unapply(tree: Ident): Option[TypeName] = {
-      if (!tree.name.isTypeName || mode != SuperCallLoc) return None
+      if (!tree.name.isTypeName || loc != SuperCallLoc || mode != TermMode) return None
       Some(tree.name.asTypeName)
     }
   }

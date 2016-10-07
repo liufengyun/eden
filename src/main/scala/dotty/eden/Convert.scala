@@ -10,14 +10,17 @@ import dotty.tools.dotc.core.StdNames._
 
 // outer context of an AST
 sealed trait Loc
+case object ExprLoc extends Loc
 case object PatLoc extends Loc
-case object TermLoc extends Loc
-case object TypeLoc extends Loc
 case object SuperCallLoc extends Loc
+
+sealed trait Mode
+case object TermMode extends Mode
+case object TypeMode extends Mode
 
 object Convert {
   def toMTreeUntpd[T <: m.Tree](tree: untpd.Tree)(implicit ctx: Context): T = {
-    new UntpdConvert(TermLoc).toMTree(tree)
+    new UntpdConvert(TermMode, ExprLoc).toMTree(tree)
   }
 
   def toMTreeTpd(tree: tpd.Tree): m.Tree = ???
