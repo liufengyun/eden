@@ -28,10 +28,10 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("new List[Int](5)")
   checkUntpd("new List[List[Int]](List(5))")
   checkUntpd("new Map[Int, String]()")
-//  checkUntpd("new B { }")
-//  checkUntpd("new B { val a = 3 }")
-//  checkUntpd("new B { def f(x: Int): Int = x*x }")
-//  checkUntpd("new B(3) { println(5); def f(x: Int): Int = x*x }")
+  checkUntpd("new B { }")
+  checkUntpd("new B { val a = 3 }")
+  checkUntpd("new B { def f(x: Int): Int = x*x }")
+  checkUntpd("new B(3) { println(5); def f(x: Int): Int = x*x }")
 
   // patterns
   checkUntpd("a match { case 5 => ; case 6 => }")

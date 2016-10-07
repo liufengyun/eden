@@ -34,10 +34,13 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc) {
       val mname = m.Term.Name(name.show)
       m.Term.Select(mpre, mname)
 
-    case u.TermNewNoTemplate(ctor, args) => // important to before TermApply
+    case u.TermNew(ctor, args) => // important to before TermApply
       val mctor = u.withLoc(SuperCallLoc) { ctor.toMTree[m.Term] }
       val margs = u.withLoc(ExprLoc) { args.map(toMTree[m.Term.Arg]) }
       m.Term.New(m.Template(Nil, List(m.Term.Apply(mctor, margs)), m.Term.Param(Nil, m.Name.Anonymous(), None, None), None))
+
+    case t: d.New =>
+      m.Term.New(t.tpt.toMTree[m.Template])
 
     case u.TermApply(fun, args) =>
       val mfun = fun.toMTree[m.Term]
@@ -252,7 +255,11 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc) {
     case t: d.Template =>
       val mparents = u.withs(TermMode, SuperCallLoc) { t.parents.map(toMTree[m.Ctor.Call]) }
       val mself = u.withs(TermMode, ParamLoc) { t.self.toMTree[m.Term.Param] }
-      val mstats = t.body.map(toMTree[m.Stat]) match { case Nil => None; case l => Some(l) }
+      val mstats = t.body match {
+        case Nil => None
+        case List(d.EmptyTree) => Some(Nil)
+        case l => Some(l.map(toMTree[m.Stat]))
+      }
       m.Template(Nil, mparents, mself, mstats)
 
     case u.ClassDef(modifiers, name, tparams, templ) =>

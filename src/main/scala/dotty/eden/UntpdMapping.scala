@@ -123,7 +123,7 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
     }
   }
 
-  object TermNewNoTemplate {
+  object TermNew {
     def unapply(tree: Tree): Option[(Tree, List[Tree])] = tree match {
       case d.Apply(d.Select(d.New(ctor), nme.CONSTRUCTOR), args) if loc != SuperCallLoc =>
         Some((ctor, args))
