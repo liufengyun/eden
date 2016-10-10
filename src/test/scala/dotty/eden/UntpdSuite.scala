@@ -104,6 +104,10 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("type Age <: Int + Boolean")
   checkUntpd("type Container[T]")
   checkUntpd("type Container[T] = List[T]")
+  checkUntpd("type Container[T] <: List[T] { def isEmpty: Boolean; type M }")
+  checkUntpd("type Container[T] <: List[T] with Set[T] { def isEmpty: Boolean; type M }")
+  checkUntpd("type Container[T] <: List[T] with Set[T] { def isEmpty: Boolean; type M = Int }")
+  checkUntpd("type Container[T] <: List[T] with Set[T] { def isEmpty: Boolean; type M <: Int }")
   checkUntpd("trait A { def test(x: Int): Boolean; val x: Int }")
   checkUntpd("trait A { self: B => def test(x: Int): Boolean; val x: Int }")
   checkUntpd("trait A { self: B => def test(x: Int): Boolean; val x: Int; type Age >: Int <: Any }")
@@ -126,15 +130,14 @@ class UntpdSuite extends EdenSuite {
 
   // other features
 //  - TypeLambdaTree
-//  - ByNameTypeTree
 //  - RefinedTypeTree
 //  - AndTypeTree
 //  - OrTypeTree
 //  - SelectFromTypeTree
 //  - SingletonTypeTree
 //  - JavaSeqLiteral
-//  - Pair: (a, b); a -> b
 //  - Closure
+//  - Pair      // import {a => b}
 //  - Import
 //  - Annotated
 

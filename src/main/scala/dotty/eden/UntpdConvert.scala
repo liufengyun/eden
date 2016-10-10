@@ -190,6 +190,15 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       val mtpt = u.withMode(TypeMode) { t.result.toMTree[m.Type] }
       m.Type.Arg.ByName(mtpt)
 
+    case t: d.RefinedTypeTree =>
+      def flatten(t: d.Tree): List[m.Type] = t match { // flatten and type
+        case t: d.AndTypeTree => flatten(t.left) ++ flatten(t.right)
+        case t => List(t.toMTree[m.Type])
+      }
+      val mtpt = flatten(t.tpt)
+      val mrefinements = t.refinements.map(toMTree[m.Stat])
+      m.Type.Compound(mtpt, mrefinements)
+
     // ============ PATTERNS ============
     case t: d.Match =>
       val mscrut = t.selector.toMTree[m.Term]
