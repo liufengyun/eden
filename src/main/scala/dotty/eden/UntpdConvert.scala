@@ -11,7 +11,7 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
 
   // add .toMTree to untyped trees
   private implicit class TreeWrapper(tree: d.Tree) {
-    def toMTree[T <: m.Tree](implicit ctx: Context): T = UntpdConvert.this.toMTree[T](tree)
+    def toMTree[T <: m.Tree]: T = UntpdConvert.this.toMTree[T](tree)
   }
 
   private def toEnums(enums: List[d.Tree]): List[m.Enumerator] = enums.map {
@@ -65,7 +65,9 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
     case u.TermNew(ctor, args) => // important to before TermApply
       val mctor = u.withLoc(SuperCallLoc) { ctor.toMTree[m.Term] }
       val margs = u.withLoc(ExprLoc) { args.map(toMTree[m.Term.Arg]) }
-      m.Term.New(m.Template(Nil, List(m.Term.Apply(mctor, margs)), m.Term.Param(Nil, m.Name.Anonymous(), None, None), None))
+      m.Term.New(
+        m.Template(Nil, List(m.Term.Apply(mctor, margs)),
+          m.Term.Param(Nil, m.Name.Anonymous(), None, None), None))
 
     case t: d.New =>
       m.Term.New(t.tpt.toMTree[m.Template])
@@ -199,6 +201,16 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       val mrefinements = t.refinements.map(toMTree[m.Stat])
       m.Type.Compound(mtpt, mrefinements)
 
+    case u.TypeSelect(pre, name) =>
+      val mpre = u.withs(TermMode, ExprLoc) { pre.toMTree[m.Term.Ref] }
+      val mname = m.Type.Name(name.show)
+      m.Type.Select(mpre, mname)
+
+    case u.TypeProject(pre, name) =>
+      val mpre = u.withs(TypeMode, ExprLoc) { pre.toMTree[m.Type] }
+      val mname = m.Type.Name(name.show)
+      m.Type.Project(mpre, mname)
+
     // ============ PATTERNS ============
     case t: d.Match =>
       val mscrut = t.selector.toMTree[m.Term]
@@ -316,7 +328,11 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       m.Type.Bounds(mlo, mhi)
 
     case u.ParamType(modifiers, name, tparams, bounds, ctxbounds) =>
-      val mname = if (name.startsWith(nme.USCORE_PARAM_PREFIX)) m.Name.Anonymous() else m.Type.Name(name.show)
+      val mname = if (name.startsWith(nme.USCORE_PARAM_PREFIX))
+        m.Name.Anonymous()
+      else
+        m.Type.Name(name.show)
+
       val mtparams = u.withs(TypeMode, ParamLoc) { tparams.map(toMTree[m.Type.Param]) }
       val mbounds = u.withMode(TypeMode) { bounds.toMTree[m.Type.Bounds] }
       val mctxbounds = u.withs(TypeMode, ExprLoc) { ctxbounds.map(toMTree[m.Type]) }
@@ -346,7 +362,9 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
     case u.ClassDef(modifiers, name, tparams, templ) =>
       val mname = m.Type.Name(name.show)
       val mtparams = u.withs(TypeMode, ParamLoc) { tparams.map(toMTree[m.Type.Param]) }
-      val ctorparams = u.withs(TermMode, ParamLoc) { templ.constr.vparamss.map(_.map(toMTree[m.Term.Param])) }
+      val ctorparams = u.withs(TermMode, ParamLoc) {
+        templ.constr.vparamss.map(_.map(toMTree[m.Term.Param]))
+      }
       val mctor = m.Ctor.Primary(Nil, m.Ctor.Name("this"), ctorparams)
       val mtempl = templ.toMTree[m.Template]
       if (modifiers.is(Trait))

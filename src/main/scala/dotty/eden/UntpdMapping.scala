@@ -97,7 +97,7 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
 
   object TermSelect {
     def unapply(tree: Select): Option[(Tree, TermName)] = {
-      if (tree.name.isTypeName) return None
+      if (tree.name.isTypeName || mode != TermMode) return None
       Some((tree.qualifier, tree.name.asTermName))
     }
   }
@@ -147,6 +147,28 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
     }
   }
 
+  object TypeSelect {
+    def isProject(qualifier: Tree): Boolean = qualifier match {
+      case d.Select(qual, name) => name.isTypeName
+      case d.Ident(name) => name.isTypeName
+      case _ => false
+    }
+
+    def unapply(tree: Select): Option[(Tree, TypeName)] = {
+      if (!tree.name.isTypeName || mode != TypeMode || isProject(tree.qualifier)) return None
+      Some((tree.qualifier, tree.name.asTypeName))
+    }
+  }
+
+  object TypeProject {
+    def unapply(tree: Select): Option[(Tree, TypeName)] = {
+      if (!tree.name.isTypeName ||
+        mode != TypeMode ||
+        !TypeSelect.isProject(tree.qualifier)) return None
+
+      Some((tree.qualifier, tree.name.asTypeName))
+    }
+  }
 
   // ============ PATTERNS ============
   object PatExtract {

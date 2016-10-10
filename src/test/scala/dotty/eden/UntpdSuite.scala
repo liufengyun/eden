@@ -121,6 +121,13 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("class A[T <: C[T]](a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; val x: Int }")
   checkUntpd("object A extends B with C { def test(x: Int): Boolean; val x: Int }")
 
+  // types
+  // checkUntpd("var a: A with B = ???")
+  checkUntpd("var a: m.A = ???")
+  checkUntpd("var a: m.List[m.t.A] = ???")
+  checkUntpd("var a: A#B = ???")
+  checkUntpd("var a: m.A#B = ???")
+
   // nested definitions
 
   // modifiers
@@ -130,7 +137,6 @@ class UntpdSuite extends EdenSuite {
 
   // other features
 //  - TypeLambdaTree
-//  - RefinedTypeTree
 //  - AndTypeTree
 //  - OrTypeTree
 //  - SelectFromTypeTree
