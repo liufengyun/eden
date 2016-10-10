@@ -176,7 +176,10 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc) {
 
     case t: d.Tuple =>
       val mtrees = t.trees.map(toMTree[m.Term])
-      m.Term.Tuple(mtrees)
+      if (mtrees.isEmpty)
+        m.Lit(())
+      else
+        m.Term.Tuple(mtrees)
 
     // ============ TYPES ============
     case u.TypeIdent(name) =>
