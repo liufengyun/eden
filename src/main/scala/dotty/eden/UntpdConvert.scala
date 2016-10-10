@@ -140,6 +140,44 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc) {
       val mfinalizer = if (t.finalizer.isEmpty) None else Some(transform(t.finalizer))
       m.Term.TryWithCases(mexpr, mcases, mfinalizer)
 
+    case t: d.ForDo =>
+      val menums = t.enums.map {
+        case t: d.GenFrom =>
+          val mpat = u.withs(TermMode, PatLoc) { t.pat.toMTree[m.Pat] }
+          val mexpr = u.withs(TermMode, ExprLoc) { t.expr.toMTree[m.Term] }
+          m.Enumerator.Generator(mpat, mexpr)
+        case t: d.GenAlias =>
+          val mpat = u.withs(TermMode, PatLoc) { t.pat.toMTree[m.Pat] }
+          val mexpr = u.withs(TermMode, ExprLoc) { t.expr.toMTree[m.Term] }
+          m.Enumerator.Val(mpat, mexpr)
+        case t =>
+          val expr = u.withs(TermMode, ExprLoc) { t.toMTree[m.Term] }
+          m.Enumerator.Guard(expr)
+      }
+      val mbody = t.body.toMTree[m.Term]
+      m.Term.For(menums, mbody)
+
+    case t: d.ForYield =>
+      val menums = t.enums.map {
+        case t: d.GenFrom =>
+          val mpat = u.withs(TermMode, PatLoc) { t.pat.toMTree[m.Pat] }
+          val mexpr = u.withs(TermMode, ExprLoc) { t.expr.toMTree[m.Term] }
+          m.Enumerator.Generator(mpat, mexpr)
+        case t: d.GenAlias =>
+          val mpat = u.withs(TermMode, PatLoc) { t.pat.toMTree[m.Pat] }
+          val mexpr = u.withs(TermMode, ExprLoc) { t.expr.toMTree[m.Term] }
+          m.Enumerator.Val(mpat, mexpr)
+        case t =>
+          val expr = u.withs(TermMode, ExprLoc) { t.toMTree[m.Term] }
+          m.Enumerator.Guard(expr)
+      }
+      val mbody = t.expr.toMTree[m.Term]
+      m.Term.ForYield(menums, mbody)
+
+    case t: d.Tuple =>
+      val mtrees = t.trees.map(toMTree[m.Term])
+      m.Term.Tuple(mtrees)
+
     // ============ TYPES ============
     case u.TypeIdent(name) =>
       m.Type.Name(name.show)

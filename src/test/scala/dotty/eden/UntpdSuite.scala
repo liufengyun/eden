@@ -43,6 +43,19 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("try f(4) catch { case _: Throwable => 4 }")
   checkUntpd("try f(4) finally println(6)")
   checkUntpd("try {} finally println(6)")
+  checkUntpd("for (arg <- args) result += arg * arg")
+  checkUntpd("for (arg <- args; double = arg * 2) result += arg * arg")
+  checkUntpd("""
+    for { i<-1 until n
+          j <- 1 until i
+          if isPrime(i+j) } yield (i, j)
+  """)
+  checkUntpd("""
+    for { i<-1 until n
+          j <- 1 until i
+          k = i + j
+          if isPrime(i+j) } yield (i, j)
+  """)
 
   // patterns
   checkUntpd("a match { case 5 => ; case 6 => }")
@@ -115,11 +128,8 @@ class UntpdSuite extends EdenSuite {
 //  - SingletonTypeTree
 //  - JavaSeqLiteral
 //  - Pair: (a, b); a -> b
-//  - Tuple: (a, b, c)
 //  - Closure
-//  - Try
 //  - Import
 //  - Annotated
-
 
 }
