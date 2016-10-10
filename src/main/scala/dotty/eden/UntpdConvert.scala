@@ -6,7 +6,7 @@ import dotty.tools.dotc.core.Contexts.Context
 import dotty.tools.dotc.core.StdNames._
 import dotty.tools.dotc.core.Flags._
 
-class UntpdConvert(initialMode: Mode, initialLoc: Loc) {
+class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
   val u = new UntpdMapping(initialMode, initialLoc)
 
   // add .toMTree to untyped trees
@@ -14,7 +14,21 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc) {
     def toMTree[T <: m.Tree](implicit ctx: Context): T = UntpdConvert.this.toMTree[T](tree)
   }
 
-  def toMTree[T <: m.Tree](tree: d.Tree)(implicit ctx: Context): T = (tree match {
+  private def toEnums(enums: List[d.Tree]): List[m.Enumerator] = enums.map {
+    case t: d.GenFrom =>
+      val mpat = u.withs(TermMode, PatLoc) { t.pat.toMTree[m.Pat] }
+      val mexpr = u.withs(TermMode, ExprLoc) { t.expr.toMTree[m.Term] }
+      m.Enumerator.Generator(mpat, mexpr)
+    case t: d.GenAlias =>
+      val mpat = u.withs(TermMode, PatLoc) { t.pat.toMTree[m.Pat] }
+      val mexpr = u.withs(TermMode, ExprLoc) { t.expr.toMTree[m.Term] }
+      m.Enumerator.Val(mpat, mexpr)
+    case t =>
+      val expr = u.withs(TermMode, ExprLoc) { t.toMTree[m.Term] }
+      m.Enumerator.Guard(expr)
+  }
+
+  def toMTree[T <: m.Tree](tree: d.Tree): T = (tree match {
     // ============ LITERALS ============
     case u.Literal(v) =>
       m.Lit(v)
@@ -141,36 +155,12 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc) {
       m.Term.TryWithCases(mexpr, mcases, mfinalizer)
 
     case t: d.ForDo =>
-      val menums = t.enums.map {
-        case t: d.GenFrom =>
-          val mpat = u.withs(TermMode, PatLoc) { t.pat.toMTree[m.Pat] }
-          val mexpr = u.withs(TermMode, ExprLoc) { t.expr.toMTree[m.Term] }
-          m.Enumerator.Generator(mpat, mexpr)
-        case t: d.GenAlias =>
-          val mpat = u.withs(TermMode, PatLoc) { t.pat.toMTree[m.Pat] }
-          val mexpr = u.withs(TermMode, ExprLoc) { t.expr.toMTree[m.Term] }
-          m.Enumerator.Val(mpat, mexpr)
-        case t =>
-          val expr = u.withs(TermMode, ExprLoc) { t.toMTree[m.Term] }
-          m.Enumerator.Guard(expr)
-      }
+      val menums = toEnums(t.enums)
       val mbody = t.body.toMTree[m.Term]
       m.Term.For(menums, mbody)
 
     case t: d.ForYield =>
-      val menums = t.enums.map {
-        case t: d.GenFrom =>
-          val mpat = u.withs(TermMode, PatLoc) { t.pat.toMTree[m.Pat] }
-          val mexpr = u.withs(TermMode, ExprLoc) { t.expr.toMTree[m.Term] }
-          m.Enumerator.Generator(mpat, mexpr)
-        case t: d.GenAlias =>
-          val mpat = u.withs(TermMode, PatLoc) { t.pat.toMTree[m.Pat] }
-          val mexpr = u.withs(TermMode, ExprLoc) { t.expr.toMTree[m.Term] }
-          m.Enumerator.Val(mpat, mexpr)
-        case t =>
-          val expr = u.withs(TermMode, ExprLoc) { t.toMTree[m.Term] }
-          m.Enumerator.Guard(expr)
-      }
+      val menums = toEnums(t.enums)
       val mbody = t.expr.toMTree[m.Term]
       m.Term.ForYield(menums, mbody)
 

@@ -21,6 +21,7 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("a :+ b")
   checkUntpd("a +: b")
   checkUntpd("a*")
+  checkUntpd("++a")
   checkUntpd("a++")
   checkUntpd("a = b")
   checkUntpd("{ a = 1; b += 2 }")
