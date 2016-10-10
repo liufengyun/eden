@@ -37,6 +37,7 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("new B { val a = 3 }")
   checkUntpd("new B { def f(x: Int): Int = x*x }")
   checkUntpd("new B(3) { println(5); def f(x: Int): Int = x*x }")
+  checkUntpd("throw new A(4)")
 
   // patterns
   checkUntpd("a match { case 5 => ; case 6 => }")
