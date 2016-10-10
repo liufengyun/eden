@@ -7,6 +7,10 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("f(this)")
   checkUntpd("f(A.this)")
   checkUntpd("this.age")
+  checkUntpd("C.this.age")
+  checkUntpd("super.age")
+  checkUntpd("super[A].age")
+  checkUntpd("C.super[A].age")
   checkUntpd("f[Int](3)")
   checkUntpd("f(x = 3)")
   checkUntpd("f(x = 3, y = 6 * 8)")
@@ -104,10 +108,8 @@ class UntpdSuite extends EdenSuite {
 //  - SelectFromTypeTree
 //  - SingletonTypeTree
 //  - JavaSeqLiteral
-//  - Return
 //  - Pair: (a, b); a -> b
 //  - Tuple: (a, b, c)
-//  - Super
 //  - Closure
 //  - Try
 //  - Import

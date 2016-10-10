@@ -26,6 +26,20 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc) {
       else
         m.Term.This(m.Name.Indeterminate(t.qual.show))
 
+    case t: d.Super =>
+      val mmix = if (t.mix.isEmpty)
+        m.Name.Anonymous()
+      else
+        m.Name.Indeterminate(t.mix.show)
+
+      val qual = t.qual.asInstanceOf[d.This].qual
+      val mqual = if (qual.isEmpty)
+        m.Name.Anonymous()
+      else
+        m.Name.Indeterminate(qual.show)
+
+      m.Term.Super(mqual, mmix)
+
     case u.TermIdent(name) =>
       m.Term.Name(name.show)
 
