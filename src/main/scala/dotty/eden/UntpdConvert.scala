@@ -186,6 +186,10 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       val mrhs = u.withs(TypeMode, ExprLoc) { rhs.toMTree[m.Type] }
       m.Type.ApplyInfix(mlhs, mop, mrhs)
 
+    case t: d.ByNameTypeTree =>
+      val mtpt = u.withMode(TypeMode) { t.result.toMTree[m.Type] }
+      m.Type.Arg.ByName(mtpt)
+
     // ============ PATTERNS ============
     case t: d.Match =>
       val mscrut = t.selector.toMTree[m.Term]
@@ -294,7 +298,7 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
     case u.ParamTerm(modifiers, name, tpt, default) =>
       val mname = if (name == nme.WILDCARD) m.Name.Anonymous() else m.Term.Name(name.show)
       val mrhs = u.withs(TermMode, ExprLoc) { default.map(toMTree[m.Term]) }
-      val mtpt = u.withMode(TypeMode) { tpt.map(toMTree[m.Type]) }
+      val mtpt = u.withMode(TypeMode) { tpt.map(toMTree[m.Type.Arg]) }
       m.Term.Param(Nil, mname, mtpt, mrhs)
 
     case t: d.TypeBoundsTree =>

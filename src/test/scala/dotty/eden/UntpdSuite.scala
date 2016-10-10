@@ -97,6 +97,7 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("def f[T :A[Int]](x: T): Int = x")
   checkUntpd("def f[T, M[_]](x: M[T]): M[T] = x")
   checkUntpd("def f[T, M[A]](x: M[T]): M[T] = x")
+  checkUntpd("def f[T, M[A]](x: => M[T]): M[T] = x")
   checkUntpd("type Age = Int")
   checkUntpd("type Age")
   checkUntpd("type Age >: Int <: Any")
