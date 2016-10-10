@@ -76,6 +76,9 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("type Container[T] = List[T]")
   checkUntpd("trait A { def test(x: Int): Boolean; val x: Int }")
   checkUntpd("trait A { self: B => def test(x: Int): Boolean; val x: Int }")
+  checkUntpd("trait A { self: B => def test(x: Int): Boolean; val x: Int; type Age >: Int <: Any }")
+  checkUntpd("trait A { self: B => def test(x: Int): Boolean; val x: Int; type Age = Int }")
+  checkUntpd("trait A { self: B => def test(x: Int): Boolean; val x: Int; type Container[T] = List[T] }")
   checkUntpd("trait A[T] extends B with C { def test(x: Int): Boolean; val x: Int }")
   checkUntpd("class A[T] extends B with C { def test(x: Int): Boolean; val x: Int }")
   checkUntpd("class A[+T] extends B with C { def test(x: Int): Boolean; val x: Int }")
@@ -87,6 +90,9 @@ class UntpdSuite extends EdenSuite {
   // nested definitions
 
   // modifiers
+  // checkUntpd("class A[T <: C[T]](val a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; val x: Int }")
+  // checkUntpd("class A[T <: C[T]](var a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; val x: Int }")
+  // checkUntpd("class A[T <: C[T]](private var a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; val x: Int }")
 
   // other features
 //  - TypeLambdaTree
