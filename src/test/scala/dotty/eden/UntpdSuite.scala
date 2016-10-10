@@ -85,7 +85,7 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("class A[-T] extends B with C { def test(x: Int): Boolean; val x: Int }")
   checkUntpd("class A[T <: Any](a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; val x: Int }")
   checkUntpd("class A[T <: C[T]](a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; val x: Int }")
-//  checkUntpd("object A extends B with C { def test(x: Int): Boolean; val x: Int }")
+  checkUntpd("object A extends B with C { def test(x: Int): Boolean; val x: Int }")
 
   // nested definitions
 

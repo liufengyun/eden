@@ -278,6 +278,11 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc) {
       val margs = u.withLoc(ExprLoc) { args.map(toMTree[m.Term.Arg]) }
       m.Term.Apply(mctor, margs)
 
+    case t: d.ModuleDef =>
+      val mname = m.Term.Name(t.name.show)
+      val mtempl = t.impl.toMTree[m.Template]
+      m.Defn.Object(Nil, mname, mtempl)
+
     // ============ PKGS ============
 
     // ============ CTORS ============
