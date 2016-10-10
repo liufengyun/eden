@@ -103,6 +103,10 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc) {
       val mbody = t.body.toMTree[m.Term]
       m.Term.Do(mbody, mcond)
 
+    case t: d.Return =>
+      val mexpr = u.withs(TermMode, ExprLoc) { t.expr.toMTree[m.Term] }
+      m.Term.Return(mexpr)
+
     // ============ TYPES ============
     case u.TypeIdent(name) =>
       m.Type.Name(name.show)

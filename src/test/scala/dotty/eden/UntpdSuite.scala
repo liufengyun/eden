@@ -24,6 +24,7 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("if (cond) a else b")
   checkUntpd("while (a > 5) { println(a); a++; }")
   checkUntpd("do { println(a); a++; } while (a > 5)")
+  checkUntpd("return a")
   checkUntpd("new List(5)")
   checkUntpd("new List[Int](5)")
   checkUntpd("new List[List[Int]](List(5))")
