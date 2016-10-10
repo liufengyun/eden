@@ -124,9 +124,11 @@ class UntpdSuite extends EdenSuite {
   // types
   // checkUntpd("var a: A with B = ???")
   checkUntpd("var a: m.A = ???")
+  checkUntpd("var a: m.d.e.A = ???")
   checkUntpd("var a: m.List[m.t.A] = ???")
   checkUntpd("var a: A#B = ???")
   checkUntpd("var a: m.A#B = ???")
+  checkUntpd("var a: m.A#B#C = ???")
 
   // nested definitions
 
