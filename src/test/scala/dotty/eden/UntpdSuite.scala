@@ -38,6 +38,11 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("new B { def f(x: Int): Int = x*x }")
   checkUntpd("new B(3) { println(5); def f(x: Int): Int = x*x }")
   checkUntpd("throw new A(4)")
+  checkUntpd("try { throw new A(4) } catch { case _: Throwable => 4 } finally { println(6) }")
+  checkUntpd("try f(4) catch { case _: Throwable => 4 } finally println(6)")
+  checkUntpd("try f(4) catch { case _: Throwable => 4 }")
+  checkUntpd("try f(4) finally println(6)")
+  checkUntpd("try {} finally println(6)")
 
   // patterns
   checkUntpd("a match { case 5 => ; case 6 => }")

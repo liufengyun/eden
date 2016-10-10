@@ -125,6 +125,21 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc) {
       val mexpr = u.withs(TermMode, ExprLoc) { t.expr.toMTree[m.Term] }
       m.Term.Throw(mexpr)
 
+    case t: d.ParsedTry =>
+      // keep blocks -- don't optimize for one-statement blocks
+      def transform(t: d.Tree) = t match {
+        case t: d.Block =>
+          val stats = (t.stats :+ t.expr).filterNot(_.isEmpty).map(toMTree[m.Stat])
+          m.Term.Block(stats)
+        case _ => t.toMTree[m.Term]
+      }
+
+      val cases = if (t.handler.isEmpty) Nil else t.handler.asInstanceOf[d.Match].cases
+      val mexpr = u.withs(TermMode, ExprLoc) { transform(t.expr) }
+      val mcases = cases.map(toMTree[m.Case])
+      val mfinalizer = if (t.finalizer.isEmpty) None else Some(transform(t.finalizer))
+      m.Term.TryWithCases(mexpr, mcases, mfinalizer)
+
     // ============ TYPES ============
     case u.TypeIdent(name) =>
       m.Type.Name(name.show)
