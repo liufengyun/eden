@@ -121,6 +121,20 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("class A[T <: C[T]](a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; val x: Int }")
   checkUntpd("object A extends B with C { def test(x: Int): Boolean; val x: Int }")
 
+  // functions
+  checkUntpd("map(_ + 1)")
+  checkUntpd("f(_ * _)")
+  checkUntpd("map((_: Int) * 2)")
+  checkUntpd("map(if (_) x else y)")
+  checkUntpd("g(_.map(f))")
+  checkUntpd("_.map(_ + 1)")
+  checkUntpd("f(x => x + 1)")
+  checkUntpd("f((x1, x2) => x1 * x2)")
+  checkUntpd("f((x: Int) => (x: Int) * 2)")
+  checkUntpd("f(z => if (z) x else y)")
+  checkUntpd("f(x => x.map(f))")
+  checkUntpd("f(x => x.map(y => y + 1))")
+
   // types
   // checkUntpd("var a: A with B = ???")
   checkUntpd("var a: m.A = ???")

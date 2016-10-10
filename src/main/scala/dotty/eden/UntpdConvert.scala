@@ -55,7 +55,8 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       m.Term.Super(mqual, mmix)
 
     case u.TermIdent(name) =>
-      m.Term.Name(name.show)
+      if (name.startsWith(nme.USCORE_PARAM_PREFIX)) m.Term.Placeholder()
+      else m.Term.Name(name.show)
 
     case u.TermSelect(pre, name) =>
       val mpre = pre.toMTree[m.Term]
@@ -101,6 +102,11 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       val mop = m.Term.Name(op.show)
       val mleft = left.toMTree[m.Term]
       m.Term.Select(mleft, mop)
+
+    case u.TermTyped(expr, tpt) =>
+      val mexpr = expr.toMTree[m.Term]
+      val mtpt = u.withMode(TypeMode) { tpt.toMTree[m.Type] }
+      m.Term.Ascribe(mexpr, mtpt)
 
     case t: d.Assign =>
       val mlhs = t.lhs.toMTree[m.Term.Ref]
@@ -172,6 +178,14 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
         m.Lit(())
       else
         m.Term.Tuple(mtrees)
+
+    case u.WildcardFunction(body) =>
+      body.toMTree[m.Term]
+
+    case u.Function(fun) =>
+      val margs = u.withs(TermMode, ParamLoc) { fun.args.map(toMTree[m.Term.Param]) }
+      val mbody = u.withs(TermMode, ExprLoc) { fun.body.toMTree[m.Term] }
+      m.Term.Function(margs, mbody)
 
     // ============ TYPES ============
     case u.TypeIdent(name) =>

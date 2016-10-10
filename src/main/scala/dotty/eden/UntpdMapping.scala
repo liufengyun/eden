@@ -132,6 +132,39 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
     }
   }
 
+  object TermTyped {
+    def unapply(tree: Typed): Option[(Tree, Tree)] = {
+      if (loc != ExprLoc || mode != TermMode) return None
+      val d.Typed(lhs, rhs) = tree
+      Some((lhs, rhs))
+    }
+  }
+
+
+  object WildcardFunction {
+    def unapply(fun: Function): Option[Tree] = {
+      val wildcard = fun.args.forall {
+        case d.ValDef(n, _, _) => n.startsWith(nme.USCORE_PARAM_PREFIX)
+        case _ => false
+      }
+
+      if (!wildcard) return None
+
+      Some(fun.body)
+    }
+  }
+
+  object Function {
+    def unapply(fun: Function): Option[Function] = {
+      fun.args.foreach {
+        case d.ValDef(n, _, _) if n.startsWith(nme.USCORE_PARAM_PREFIX) => return None
+        case _ =>
+      }
+
+      Some(fun)
+    }
+  }
+
   // ============ TYPES ============
   object TypeIdent {
     def unapply(tree: Ident): Option[TypeName] = {
