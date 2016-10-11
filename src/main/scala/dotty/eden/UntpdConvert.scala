@@ -187,6 +187,10 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       val mbody = u.withs(TermMode, ExprLoc) { fun.body.toMTree[m.Term] }
       m.Term.Function(margs, mbody)
 
+    case u.Interpolate(id, lits, args) =>
+      val margs = u.withs(TermMode, ExprLoc) { args.map(toMTree[m.Term]) }
+      m.Term.Interpolate(m.Term.Name(id.show), lits.map(m.Lit(_)), margs)
+
     // ============ TYPES ============
     case u.TypeIdent(name) =>
       m.Type.Name(name.show)

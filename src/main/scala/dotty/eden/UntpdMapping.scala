@@ -165,6 +165,22 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
     }
   }
 
+  object Interpolate {
+    def unapply(s: InterpolatedString): Option[(TermName, List[String], List[Tree])] = {
+      val segs = s.segments.flatMap { seg =>
+        if (seg.isInstanceOf[Thicket])
+          seg.asInstanceOf[Thicket].trees
+        else
+          List(seg)
+      }
+      val (lits, args) = segs.partition(seg => seg.isInstanceOf[Literal])
+      val strs: List[String] = lits.map { t =>
+        t.asInstanceOf[Literal].const.value.asInstanceOf[String]
+      }
+      Some((s.id, strs, args))
+    }
+  }
+
   // ============ TYPES ============
   object TypeIdent {
     def unapply(tree: Ident): Option[TypeName] = {

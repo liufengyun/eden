@@ -62,6 +62,10 @@ class UntpdSuite extends EdenSuite {
           if isPrime(i+j) } yield (i, j)
   """)
 
+  // interpolation
+  checkUntpd("""s"hello, $world"""")
+  checkUntpd("""s"hello, $world, ${1 + 2}"""")
+
   // patterns
   checkUntpd("a match { case 5 => ; case 6 => }")
   checkUntpd("a match { case Some(x) => x; case None => y }")
@@ -127,7 +131,7 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("map((_: Int) * 2)")
   checkUntpd("map(if (_) x else y)")
   checkUntpd("g(_.map(f))")
-  checkUntpd("_.map(_ + 1)")
+  checkUntpd("l.map(_ + 1)")
   checkUntpd("f(x => x + 1)")
   checkUntpd("f((x1, x2) => x1 * x2)")
   checkUntpd("f((x: Int) => (x: Int) * 2)")
