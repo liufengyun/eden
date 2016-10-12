@@ -143,6 +143,8 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
 
   object WildcardFunction {
     def unapply(fun: Function): Option[Tree] = {
+      if (mode != TermMode) return None
+
       val wildcard = fun.args.forall {
         case d.ValDef(n, _, _) => n.startsWith(nme.USCORE_PARAM_PREFIX)
         case _ => false
@@ -156,6 +158,8 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
 
   object Function {
     def unapply(fun: Function): Option[Function] = {
+      if (mode != TermMode) return None
+
       fun.args.foreach {
         case d.ValDef(n, _, _) if n.startsWith(nme.USCORE_PARAM_PREFIX) => return None
         case _ =>
@@ -216,6 +220,13 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
         !TypeSelect.isProject(tree.qualifier)) return None
 
       Some((tree.qualifier, tree.name.asTypeName))
+    }
+  }
+
+  object TypeFunction {
+    def unapply(fun: Function): Option[(List[Tree], Tree)] = {
+      if (mode != TypeMode) return None
+      Some((fun.args, fun.body))
     }
   }
 

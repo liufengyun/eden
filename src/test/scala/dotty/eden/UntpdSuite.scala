@@ -90,6 +90,7 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("var a: Int")
   checkUntpd("var a, b: Int")
   checkUntpd("var a, b = 3")
+  checkUntpd("var a: Int = _")
   checkUntpd("var Some(Some(x)) = a")
   checkUntpd("def f(x: Int): Int = x*x")
   checkUntpd("def f(x: Int = 5): Int = x*x")
@@ -123,6 +124,7 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("class A[-T] extends B with C { def test(x: Int): Boolean; val x: Int }")
   checkUntpd("class A[T <: Any](a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; val x: Int }")
   checkUntpd("class A[T <: C[T]](a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; val x: Int }")
+  checkUntpd("class A[T <: C[T]](a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; var x: Int = _ }")
   checkUntpd("object A extends B with C { def test(x: Int): Boolean; val x: Int }")
 
   // functions
@@ -138,6 +140,7 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("f(z => if (z) x else y)")
   checkUntpd("f(x => x.map(f))")
   checkUntpd("f(x => x.map(y => y + 1))")
+  checkUntpd("val f: Int => String = _.toString ")
 
   // types
   // checkUntpd("var a: A with B = ???")
@@ -147,6 +150,8 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("var a: A#B = ???")
   checkUntpd("var a: m.A#B = ???")
   checkUntpd("var a: m.A#B#C = ???")
+  checkUntpd("(f: (A => B) => (C, D) => D)")
+  checkUntpd("(f: ((A, A) => B) => (C, D) => D)")
 
   // nested definitions
 

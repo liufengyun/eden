@@ -229,6 +229,11 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       val mname = m.Type.Name(name.show)
       m.Type.Project(mpre, mname)
 
+    case u.TypeFunction(tparams, tret) =>
+      val mtparams = tparams.map(toMTree[m.Type])
+      val mtret = tret.toMTree[m.Type]
+      m.Type.Function(mtparams, mtret)
+
     // ============ PATTERNS ============
     case t: d.Match =>
       val mscrut = t.selector.toMTree[m.Term]
@@ -312,7 +317,13 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       m.Defn.Val(Nil, List(m.Pat.Var.Term(m.Term.Name(name.show))), mtpt, mrhs)
 
     case u.VarDef(modifiers, name, tpt, rhs) =>
-      val mrhs = if (rhs.isEmpty) None else u.withMode(TermMode) { Some(rhs.toMTree[m.Term]) }
+      val mrhs = if (rhs.isEmpty)
+        None
+      else if (rhs.isInstanceOf[d.Ident] && rhs.asInstanceOf[d.Ident].name == nme.WILDCARD)
+        None
+      else
+        u.withMode(TermMode) { Some(rhs.toMTree[m.Term]) }
+
       val mtpt = u.withMode(TypeMode) { tpt.map(toMTree[m.Type]) }
       m.Defn.Var(Nil, List(m.Pat.Var.Term(m.Term.Name(name.show))), mtpt, mrhs)
 
