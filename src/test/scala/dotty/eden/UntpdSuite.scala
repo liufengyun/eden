@@ -1,7 +1,10 @@
 package dotty.eden
 
+import scala.{meta => m}
+
 class UntpdSuite extends EdenSuite {
   // terms
+  checkUntpd("null")
   checkUntpd("""println("hello, world")""")
   checkUntpd("println(42)")
   checkUntpd("f(this)")
@@ -31,13 +34,44 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("(2, 4)")
   checkUntpd("a -> b")
   checkUntpd("if (cond) a else b")
+  checkUntpd("if (cond) return a")
   checkUntpd("while (a > 5) { println(a); a++; }")
   checkUntpd("do { println(a); a++; } while (a > 5)")
   checkUntpd("return a")
   checkUntpd("new List(5)")
   checkUntpd("new List[Int](5)")
   checkUntpd("new List[List[Int]](List(5))")
-  checkUntpd("new Map[Int, String]()")
+  checkUntpd("new Map[Int, String]")
+  checkUntpd("new Map[Int, String]()",  // impossible to detect presence of ()
+    m.Term.New(
+      m.Template(
+        Nil,
+        List(
+          m.Term.ApplyType(
+              m.Ctor.Ref.Name("Map"),
+              List(m.Type.Name("Int"), m.Type.Name("String"))
+          )
+        ),
+        m.Term.Param(Nil, m.Name.Anonymous(), None, None),
+        None
+      )
+    )
+  )
+  checkUntpd("new Map[Int, String](a -> b)")
+  checkUntpd("new B")
+  checkUntpd("new B()",  // impossible to detect presence of ()
+    m.Term.New(
+      m.Template(
+        Nil,
+        List(m.Ctor.Ref.Name("B")),
+        m.Term.Param(Nil, m.Name.Anonymous(), None, None),
+        None
+      )
+    )
+  )
+  checkUntpd("new c.B")
+  checkUntpd("new C#B")
+  checkUntpd("new o.C#B")
   checkUntpd("new B { }")
   checkUntpd("new B { val a = 3 }")
   checkUntpd("new B { def f(x: Int): Int = x*x }")
@@ -85,6 +119,7 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("val a, b: Int")
   checkUntpd("val a, b = 3")
   checkUntpd("val Some(Some(x)) = a")
+
   checkUntpd("var a = 3")
   checkUntpd("var a: List[Int] = List(3)")
   checkUntpd("var a: Int")
@@ -92,6 +127,7 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("var a, b = 3")
   checkUntpd("var a: Int = _")
   checkUntpd("var Some(Some(x)) = a")
+
   checkUntpd("def f(x: Int): Int = x*x")
   checkUntpd("def f(x: Int = 5): Int = x*x")
   checkUntpd("def f(x: Int = 5)(y: Int): Int = x*y")
@@ -103,6 +139,19 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("def f[T, M[_]](x: M[T]): M[T] = x")
   checkUntpd("def f[T, M[A]](x: M[T]): M[T] = x")
   checkUntpd("def f[T, M[A]](x: => M[T]): M[T] = x")
+  checkUntpd("""
+    object FilterTest extends Application {
+      def filter(xs: List[Int], threshold: Int) = {
+        def process(ys: List[Int]): List[Int] =
+          if (ys.isEmpty) ys
+          else if (ys.head < threshold) ys.head :: process(ys.tail)
+          else process(ys.tail)
+        process(xs)
+      }
+      println(filter(List(1, 9, 2, 8, 3, 7, 4), 5))
+    }
+  """)
+
   checkUntpd("type Age = Int")
   checkUntpd("type Age")
   checkUntpd("type Age >: Int <: Any")
@@ -113,6 +162,7 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("type Container[T] <: List[T] with Set[T] { def isEmpty: Boolean; type M }")
   checkUntpd("type Container[T] <: List[T] with Set[T] { def isEmpty: Boolean; type M = Int }")
   checkUntpd("type Container[T] <: List[T] with Set[T] { def isEmpty: Boolean; type M <: Int }")
+
   checkUntpd("trait A { def test(x: Int): Boolean; val x: Int }")
   checkUntpd("trait A { self: B => def test(x: Int): Boolean; val x: Int }")
   checkUntpd("trait A { self: B => def test(x: Int): Boolean; val x: Int; type Age >: Int <: Any }")
@@ -126,6 +176,23 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("class A[T <: C[T]](a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; val x: Int }")
   checkUntpd("class A[T <: C[T]](a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; var x: Int = _ }")
   checkUntpd("object A extends B with C { def test(x: Int): Boolean; val x: Int }")
+
+  checkUntpd("""
+    class Graph {
+      class Node {
+        var connectedNodes: List[Node] = Nil
+        def connectTo(node: Node) =
+          if (connectedNodes.find(node.equals).isEmpty)
+            connectedNodes = node :: connectedNodes
+      }
+      var nodes: List[Node] = Nil
+      def newNode: Node = {
+        val res = new Node
+        nodes = res :: nodes
+        res
+      }
+    }
+  """)
 
   // functions
   checkUntpd("map(_ + 1)")

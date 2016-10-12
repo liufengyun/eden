@@ -15,6 +15,14 @@ trait EdenSuite extends FunSuite {
     stats match { case List(stat) => stat; case stats => untpd.Thicket(stats) }
   }
 
+  def checkUntpd(code: String, expect: m.Stat) = {
+    test(code) {
+      val dTree: untpd.Tree = dottyParse(code)
+      var convertedTree: m.Tree = Convert.toMTreeUntpd(dTree)
+      assert(expect.structure == convertedTree.structure)
+    }
+  }
+
   def checkUntpd(code: String): Unit = {
     test(code) {
       import scala.meta._

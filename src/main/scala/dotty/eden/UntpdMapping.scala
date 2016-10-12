@@ -285,6 +285,28 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
     }
   }
 
+  object CtorSelect {
+    def unapply(tree: Select): Option[(Tree, TypeName)] = {
+      if (!tree.name.isTypeName ||
+        loc != SuperCallLoc ||
+        mode != TermMode ||
+        TypeSelect.isProject(tree.qualifier)) return None
+
+      Some((tree.qualifier, tree.name.asTypeName))
+    }
+  }
+
+  object CtorProject {
+    def unapply(tree: Select): Option[(Tree, TypeName)] = {
+      if (!tree.name.isTypeName ||
+        loc != SuperCallLoc ||
+        mode != TermMode ||
+        !TypeSelect.isProject(tree.qualifier)) return None
+
+      Some((tree.qualifier, tree.name.asTypeName))
+    }
+  }
+
   // ============ DEFNS ============
   object ValDef {
     def unapply(tree: ValDef)(implicit ctx: Context): Option[(Modifiers, Name, Option[Tree], Tree)] = {

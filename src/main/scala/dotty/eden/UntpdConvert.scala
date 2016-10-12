@@ -64,11 +64,16 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       m.Term.Select(mpre, mname)
 
     case u.TermNew(ctor, args) => // important to before TermApply
-      val mctor = u.withLoc(SuperCallLoc) { ctor.toMTree[m.Term] }
+      val mctor = u.withLoc(SuperCallLoc) { ctor.toMTree[m.Ctor.Call] }
       val margs = u.withLoc(ExprLoc) { args.map(toMTree[m.Term.Arg]) }
-      m.Term.New(
-        m.Template(Nil, List(m.Term.Apply(mctor, margs)),
-          m.Term.Param(Nil, m.Name.Anonymous(), None, None), None))
+      if (margs.isEmpty)
+        m.Term.New(
+          m.Template(Nil, List(mctor),
+            m.Term.Param(Nil, m.Name.Anonymous(), None, None), None))
+      else
+        m.Term.New(
+          m.Template(Nil, List(m.Term.Apply(mctor, margs)),
+            m.Term.Param(Nil, m.Name.Anonymous(), None, None), None))
 
     case t: d.New =>
       m.Term.New(t.tpt.toMTree[m.Template])
@@ -123,7 +128,7 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
     case t: d.If =>
       val mcond = t.cond.toMTree[m.Term]
       val mthen = t.thenp.toMTree[m.Term]
-      val melse = t.elsep.toMTree[m.Term]
+      val melse = if (t.elsep.isEmpty) m.Lit() else t.elsep.toMTree[m.Term]
       m.Term.If(mcond, mthen, melse)
 
     case t: d.Parens =>
@@ -416,6 +421,14 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
     // ============ CTORS ============
     case u.CtorName(name) =>
       m.Ctor.Name(name.show)
+
+    case u.CtorSelect(qual, name) =>
+      val mqual = u.withs(TermMode, ExprLoc) { qual.toMTree[m.Term.Ref] }
+      m.Ctor.Ref.Select(mqual, m.Ctor.Name(name.show))
+
+    case u.CtorProject(qual, name) =>
+      val mqual = u.withs(TypeMode, ExprLoc) { qual.toMTree[m.Type] }
+      m.Ctor.Ref.Project(mqual, m.Ctor.Name(name.show))
 
     // ============ TEMPLATES ============
 
