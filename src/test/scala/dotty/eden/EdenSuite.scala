@@ -6,6 +6,7 @@ import dotty.tools.dotc.ast.{tpd, untpd}
 import dotty.tools.dotc.parsing.Parsers.Parser
 import dotty.tools.dotc.util.SourceFile
 import dotty.tools.dotc.core.Contexts.ContextBase
+import scala.meta.dialects.Dotty
 
 trait EdenSuite extends FunSuite {
   implicit val ctx = (new ContextBase).initialCtx

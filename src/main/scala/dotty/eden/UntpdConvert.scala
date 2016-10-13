@@ -243,6 +243,16 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       val mref = u.withs(TermMode, ExprLoc) { t.ref.toMTree[m.Term.Ref] }
       m.Type.Singleton(mref)
 
+    case u.TypeOr(lhs, rhs) =>
+      val mlhs = u.withMode(TypeMode) { lhs.toMTree[m.Type] }
+      val mrhs = u.withMode(TypeMode) { rhs.toMTree[m.Type] }
+      m.Type.Or(mlhs, mrhs)
+
+    case u.TypeAnd(lhs, rhs) =>
+      val mlhs = u.withMode(TypeMode) { lhs.toMTree[m.Type] }
+      val mrhs = u.withMode(TypeMode) { rhs.toMTree[m.Type] }
+      m.Type.And(mlhs, mrhs)
+
     // ============ PATTERNS ============
     case t: d.Match =>
       val mscrut = t.selector.toMTree[m.Term]

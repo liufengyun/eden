@@ -244,8 +244,6 @@ class UntpdSuite extends EdenSuite {
 
   // other features
 //  - TypeLambdaTree
-//  - AndTypeTree
-//  - OrTypeTree
 //  - JavaSeqLiteral
 //  - Closure
 //  - Annotated

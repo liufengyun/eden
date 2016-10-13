@@ -195,8 +195,22 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
 
   object TypeInfixOp {
     def unapply(tree: InfixOp): Option[(Tree, TypeName, Tree)] = {
-      if (mode != TypeMode) return None
+      if (mode != TypeMode || tree.op == tpnme.raw.BAR || tree.op == tpnme.raw.AMP) return None
       Some((tree.left, tree.op.asTypeName, tree.right))
+    }
+  }
+
+  object TypeOr {
+    def unapply(tree: InfixOp): Option[(Tree, Tree)] = {
+      if (mode != TypeMode || tree.op != tpnme.raw.BAR) return None
+      Some((tree.left, tree.right))
+    }
+  }
+
+  object TypeAnd {
+    def unapply(tree: InfixOp): Option[(Tree, Tree)] = {
+      if (mode != TypeMode || tree.op != tpnme.raw.AMP) return None
+      Some((tree.left, tree.right))
     }
   }
 
