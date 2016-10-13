@@ -224,6 +224,8 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("val a: A | B = ???")
   checkUntpd("val a: A | B | C = ???")
   checkUntpd("val a: A & B & C = ???")
+  // checkUntpd("trait A[type K, type V]")
+  // checkUntpd("new A[K = String, V = Int]")
 
   // imports
   checkUntpd("import a._")
@@ -265,9 +267,6 @@ class UntpdSuite extends EdenSuite {
 
   // other features
   // - TypeLambdaTree
-  // - Annotated
-  // - Eta
-  // - Named type var: [type X]
 
   // scala tour code snipeets
   // checkUntpd("""
