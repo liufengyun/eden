@@ -418,7 +418,24 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       val mtempl = t.impl.toMTree[m.Template]
       m.Defn.Object(Nil, mname, mtempl)
 
-    // ============ PKGS ============
+    // ============ IMPORTS ============
+    case u.Import(imports) =>
+      val mimports = imports.map { case (expr, selectors) =>
+        val mexpr = u.withs(TermMode, ExprLoc) { expr.toMTree[m.Term.Ref] }
+        val mselectors = u.withLoc(ImportLoc) { selectors.map(toMTree[m.Importee]) }
+        m.Importer(mexpr, mselectors)
+      }
+      m.Import(mimports)
+
+    case u.ImportName(name) =>
+      if (name == nme.WILDCARD) m.Importee.Wildcard()
+      else m.Importee.Name(m.Name.Indeterminate(name.show))
+
+    case u.ImportRename(a, b) =>
+      m.Importee.Rename(m.Name.Indeterminate(a.show), m.Name.Indeterminate(b.show))
+
+    case u.UnImport(name) =>
+      m.Importee.Unimport(m.Name.Indeterminate(name.show))
 
     // ============ CTORS ============
     case u.CtorName(name) =>

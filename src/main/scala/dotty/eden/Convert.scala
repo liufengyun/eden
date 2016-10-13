@@ -14,6 +14,7 @@ case object ExprLoc extends Loc
 case object PatLoc extends Loc
 case object SuperCallLoc extends Loc
 case object ParamLoc extends Loc
+case object ImportLoc extends Loc
 
 sealed trait Mode
 case object TermMode extends Mode
@@ -26,4 +27,3 @@ object Convert {
 
   def toMTreeTpd(tree: tpd.Tree): m.Tree = ???
 }
-

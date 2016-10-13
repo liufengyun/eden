@@ -429,4 +429,46 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
       Some((tree.mods, tree.name, tree.tparams, bounds, ctxBounds))
     }
   }
+  // ============ IMPORTS ============
+  object Import {
+    def unapply(tree: Tree): Option[List[(Tree, List[Tree])]] = tree match {
+      case d.Import(expr, selectors) => Some(List(expr -> selectors))
+      case t: Thicket if t.trees.forall(_.isInstanceOf[Import]) => // import a.b, a.c
+        Some(t.trees.map { imp =>
+          val impt = imp.asInstanceOf[Import]
+          (impt.expr -> impt.selectors)
+        })
+      case _ => None
+    }
+  }
+
+  object ImportName {
+    def unapply(tree: Ident): Option[Name] = {
+      if (loc != ImportLoc) return None
+      else Some(tree.name)
+    }
+  }
+
+  // Thicket(Ident(c), Ident(_))
+  object ImportRename {
+    def unapply(tree: Thicket): Option[(Name, Name)] = {
+      if (loc != ImportLoc) return None
+      tree.trees match {
+        case List(d.Ident(a), d.Ident(b)) if b != nme.WILDCARD =>
+          Some((a, b))
+        case _ => None
+      }
+    }
+  }
+
+  object UnImport {
+    def unapply(tree: Thicket): Option[Name] = {
+      if (loc != ImportLoc) return None
+      tree.trees match {
+        case List(d.Ident(name), d.Ident(nme.WILDCARD)) =>
+          Some(name)
+        case _ => None
+      }
+    }
+  }
 }
