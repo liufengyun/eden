@@ -221,6 +221,9 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("(f: ((A, A) => B) => (C, D) => D)")
   checkUntpd("var a: o.type = ???")
   checkUntpd("var a: o.x.type = ???")
+  checkUntpd("val a: A | B = ???", verbose = true)
+  checkUntpd("val a: A | B | C = ???", verbose = true)
+  checkUntpd("val a: A & B & C = ???", verbose = true)
 
   // imports
   checkUntpd("import a._")

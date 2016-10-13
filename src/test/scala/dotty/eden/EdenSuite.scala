@@ -23,7 +23,7 @@ trait EdenSuite extends FunSuite {
     }
   }
 
-  def checkUntpd(code: String): Unit = {
+  def checkUntpd(code: String, verbose: Boolean = false): Unit = {
     test(code) {
       import scala.meta._
       val mTree: m.Tree = code.parse[m.Stat].get
@@ -31,7 +31,7 @@ trait EdenSuite extends FunSuite {
       var convertedTree: m.Tree = null
 
       try { convertedTree = Convert.toMTreeUntpd(dTree) } finally {
-        if (convertedTree == null || mTree.structure != convertedTree.structure)
+        if (convertedTree == null || mTree.structure != convertedTree.structure || verbose)
           debug
       }
 
