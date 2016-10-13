@@ -485,4 +485,26 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
       }
     }
   }
+
+  // ============ Annotations ============
+  object TermAnnot {
+    def collect(tree: Tree): (Tree, List[Tree]) = tree match {
+      case d.Annotated(arg, annot) =>
+        val (tree, annots) = collect(arg)
+        (tree, annots :+ annot)
+      case _ => (tree, Nil)
+    }
+
+    def unapply(tree: Annotated): Option[(Tree, List[Tree])] = {
+      if (mode != TermMode) return None
+      return Some(collect(tree))
+    }
+  }
+
+  object TypeAnnot {
+    def unapply(tree: Annotated): Option[(Tree, List[Tree])] = {
+      if (mode != TypeMode) return None
+      return Some(TermAnnot.collect(tree))
+    }
+  }
 }

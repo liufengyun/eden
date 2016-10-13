@@ -2,9 +2,11 @@ package dotty.eden
 
 import scala.{meta => m}
 import dotty.tools.dotc.ast.{ untpd => d }
+import dotty.tools.dotc.ast.untpd.modsDeco
 import dotty.tools.dotc.core.Contexts.Context
 import dotty.tools.dotc.core.StdNames._
 import dotty.tools.dotc.core.Flags._
+import scala.collection.mutable.ListBuffer
 
 class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
   val u = new UntpdMapping(initialMode, initialLoc)
@@ -26,6 +28,67 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
     case t =>
       val expr = u.withs(TermMode, ExprLoc) { t.toMTree[m.Term] }
       m.Enumerator.Guard(expr)
+  }
+
+  private implicit def toMods(modifiers: d.Modifiers): List[m.Mod] = {
+    val lb = new ListBuffer[m.Mod]
+
+    if (modifiers.hasAnnotations) {
+      lb ++= modifiers.annotations.map { annot =>
+        m.Mod.Annot(u.withs(TermMode, SuperCallLoc) { annot.toMTree[m.Ctor.Call] })
+      }
+    }
+
+    // if (modifiers.is(Private) || modifiers.is(Protected)) {
+    //   val scope = if (modifiers.privateWithin == tpnme.EMPTY)
+    //     m.Name.Anonymous()
+    //   else
+    //     m.Name.Indeterminate(modifiers.privateWithin.show)
+
+    //   if (modifiers.is(Protected))
+    //     lb += m.Mod.Protected(scope)
+    //   else
+    //     lb += m.Mod.Private(scope)
+    // }
+
+    // if (modifiers.is(PrivateLocal)) {
+    //   val scope = m.Mod.Private(m.Name.Indeterminate("this"))
+    //   lb += m.Mod.Private(scope)
+    // }
+
+    // if (modifiers.is(Implicit)) lb += m.Mod.Implicit()
+
+    // if (modifiers.is(Final)) lb += m.Mod.Final()
+
+    // if (modifiers.is(Sealed)) lb += m.Mod.Sealed()
+
+    // if (modifiers.is(Override)) lb += m.Mod.Sealed()
+
+    // if (modifiers.is(Case)) lb += m.Mod.Case()
+
+    // if (modifiers.is(Abstract)) lb += m.Mod.Abstract()
+
+    // if (modifiers.is(AbsOverride)) {
+    //   lb += m.Mod.Abstract()
+    //   lb += m.Mod.Override()
+    // }
+
+    if (modifiers.is(Covariant)) lb += m.Mod.Covariant()
+    if (modifiers.is(Contravariant)) lb += m.Mod.Contravariant()
+
+    // if (modifiers.is(Lazy)) lb += m.Mod.Lazy()
+
+    // if (modifiers.is(Inline)) lb += m.Mod.Inline()
+
+    // TODO: ValParam, VarParam
+    // if (modifiers.is(Param) && u.loc == ParamLoc && u.mode == TermMode) {
+    //   if (modifiers.is(Mutable))
+    //     lb += m.Mod.VarParam()
+    //   else
+    //     lb += m.Mod.ValParam()
+    // }
+
+    lb.toList
   }
 
   def toMTree[T <: m.Tree](tree: d.Tree): T = (tree match {
@@ -132,7 +195,7 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       m.Term.If(mcond, mthen, melse)
 
     case t: d.Parens =>
-      t.forwardTo.toMTree
+      t.forwardTo.toMTree[m.Tree]
 
     case t: d.WhileDo =>
       val mcond = t.cond.toMTree[m.Term]
@@ -300,27 +363,27 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
     // ============ DECLS ============
     case u.VarDcl(modifiers, name, tpt) =>
       val mtpt = u.withMode(TypeMode) { tpt.toMTree[m.Type] }
-      m.Decl.Var(Nil, List(m.Pat.Var.Term(m.Term.Name(name.show))), mtpt)
+      m.Decl.Var(modifiers, List(m.Pat.Var.Term(m.Term.Name(name.show))), mtpt)
 
     case u.ValDcl(modifiers, name, tpt) =>
       val mtpt = u.withMode(TypeMode) { tpt.toMTree[m.Type] }
-      m.Decl.Val(Nil, List(m.Pat.Var.Term(m.Term.Name(name.show))), mtpt)
+      m.Decl.Val(modifiers, List(m.Pat.Var.Term(m.Term.Name(name.show))), mtpt)
 
     case t: d.DefDef if t.rhs.isEmpty =>
       val mname = m.Term.Name(t.name.show)
       val mtparams = u.withs(TypeMode, ParamLoc) { t.tparams.map(toMTree[m.Type.Param]) }
       val mvparams = u.withs(TermMode, ParamLoc) { t.vparamss.map(_.map(toMTree[m.Term.Param]))}
       val mtpt = u.withMode(TypeMode) { t.tpt.toMTree[m.Type] }
-      m.Decl.Def(Nil, mname, mtparams, mvparams, mtpt)
+      m.Decl.Def(t.mods, mname, mtparams, mvparams, mtpt)
 
     case t: d.PatDef if t.rhs.isEmpty =>
       val mpats = u.withLoc(PatLoc) { t.pats.map(toMTree[m.Pat.Var.Term]) }
       val mtpt = u.withMode(TypeMode) { t.tpt.toMTree[m.Type] }
 
-      if (t.mods.flags.is(Mutable))
-        m.Decl.Var(Nil, mpats, mtpt)
+      if (t.mods.is(Mutable))
+        m.Decl.Var(t.mods, mpats, mtpt)
       else
-        m.Decl.Val(Nil, mpats, mtpt)
+        m.Decl.Val(t.mods, mpats, mtpt)
 
     case u.TypeDcl(modifiers, name, tparams, bounds) =>
       val mname = m.Type.Name(name.show)
@@ -333,7 +396,7 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
     case u.ValDef(modifiers, name, tpt, rhs) =>
       val mrhs = u.withMode(TermMode) { rhs.toMTree[m.Term] }
       val mtpt = u.withMode(TypeMode) { tpt.map(toMTree[m.Type]) }
-      m.Defn.Val(Nil, List(m.Pat.Var.Term(m.Term.Name(name.show))), mtpt, mrhs)
+      m.Defn.Val(modifiers, List(m.Pat.Var.Term(m.Term.Name(name.show))), mtpt, mrhs)
 
     case u.VarDef(modifiers, name, tpt, rhs) =>
       val mrhs = if (rhs.isInstanceOf[d.Ident] && rhs.asInstanceOf[d.Ident].name == nme.WILDCARD)
@@ -342,17 +405,17 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
         u.withMode(TermMode) { Some(rhs.toMTree[m.Term]) }
 
       val mtpt = u.withMode(TypeMode) { tpt.map(toMTree[m.Type]) }
-      m.Defn.Var(Nil, List(m.Pat.Var.Term(m.Term.Name(name.show))), mtpt, mrhs)
+      m.Defn.Var(modifiers, List(m.Pat.Var.Term(m.Term.Name(name.show))), mtpt, mrhs)
 
     case t: d.PatDef if !t.rhs.isEmpty =>
       val mpats = u.withLoc(PatLoc) { t.pats.map(toMTree[m.Pat]) }
       val mtpt = if (t.tpt.isEmpty) None else u.withMode(TypeMode) { Some(t.tpt.toMTree[m.Type]) }
       val mrhs = u.withMode(TermMode) { t.rhs.toMTree[m.Term] }
 
-      if (t.mods.flags.is(Mutable))
-        m.Defn.Var(Nil, mpats, mtpt, Some(mrhs))
+      if (t.mods.is(Mutable))
+        m.Defn.Var(t.mods, mpats, mtpt, Some(mrhs))
       else
-        m.Defn.Val(Nil, mpats, mtpt, mrhs)
+        m.Defn.Val(t.mods, mpats, mtpt, mrhs)
 
     case t: d.DefDef if !t.rhs.isEmpty =>
       val mname = m.Term.Name(t.name.show)
@@ -360,13 +423,13 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       val mvparams = u.withs(TermMode, ParamLoc) { t.vparamss.map(_.map(toMTree[m.Term.Param]))}
       val mtpt = if (t.tpt.isEmpty) None else Some(u.withMode(TypeMode) { t.tpt.toMTree[m.Type] })
       val mrhs = u.withs(TermMode, ExprLoc) { t.rhs.toMTree[m.Term] }
-      m.Defn.Def(Nil, mname, mtparams, mvparams, mtpt, mrhs)
+      m.Defn.Def(t.mods, mname, mtparams, mvparams, mtpt, mrhs)
 
     case u.ParamTerm(modifiers, name, tpt, default) =>
       val mname = if (name == nme.WILDCARD) m.Name.Anonymous() else m.Term.Name(name.show)
       val mrhs = u.withs(TermMode, ExprLoc) { default.map(toMTree[m.Term]) }
       val mtpt = u.withMode(TypeMode) { tpt.map(toMTree[m.Type.Arg]) }
-      m.Term.Param(Nil, mname, mtpt, mrhs)
+      m.Term.Param(modifiers, mname, mtpt, mrhs)
 
     case t: d.TypeBoundsTree =>
       val mlo = if (t.lo.isEmpty) None else Some(u.withMode(TypeMode) { t.lo.toMTree[m.Type] })
@@ -382,22 +445,33 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       val mtparams = u.withs(TypeMode, ParamLoc) { tparams.map(toMTree[m.Type.Param]) }
       val mbounds = u.withMode(TypeMode) { bounds.toMTree[m.Type.Bounds] }
       val mctxbounds = u.withs(TypeMode, ExprLoc) { ctxbounds.map(toMTree[m.Type]) }
-      val mmods =
-        if (modifiers.flags.is(Covariant)) List(m.Mod.Covariant())
-        else if (modifiers.flags.is(Contravariant)) List(m.Mod.Contravariant())
-        else Nil
 
-      m.Type.Param(mmods, mname, mtparams, mbounds, Nil/*view bounds*/, mctxbounds)
+      m.Type.Param(modifiers, mname, mtparams, mbounds, Nil/*view bounds*/, mctxbounds)
 
     case u.TypeDef(modifiers, name, tparams, rhs) =>        // important to be after ParamType
       val mname = m.Type.Name(name.show)
       val mtparams = u.withs(TypeMode, ParamLoc) { tparams.map(toMTree[m.Type.Param]) }
       val mrhs = u.withs(TypeMode, ExprLoc) { rhs.toMTree[m.Type] }
-      m.Defn.Type(Nil, mname, mtparams, mrhs)
+      m.Defn.Type(modifiers, mname, mtparams, mrhs)
 
     case t: d.Template =>
       val mparents = u.withs(TermMode, SuperCallLoc) { t.parents.map(toMTree[m.Ctor.Call]) }
-      val mself = u.withs(TermMode, ParamLoc) { t.self.toMTree[m.Term.Param] }
+      val mself =  {
+        val self = t.self
+
+        val mname = if (self.name == nme.WILDCARD)
+          m.Name.Anonymous()
+        else
+          m.Term.Name(self.name.show)
+
+        val mtpt = if (self.isEmpty)
+          None
+        else
+          Some(u.withMode(TypeMode) { self.tpt.toMTree[m.Type.Arg] })
+
+        m.Term.Param(Nil, mname, mtpt, None)
+      }
+
       val mstats = t.body match {
         case Nil => None
         case List(d.EmptyTree) => Some(Nil)
@@ -408,15 +482,17 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
     case u.ClassDef(modifiers, name, tparams, templ) =>
       val mname = m.Type.Name(name.show)
       val mtparams = u.withs(TypeMode, ParamLoc) { tparams.map(toMTree[m.Type.Param]) }
+
       val ctorparams = u.withs(TermMode, ParamLoc) {
         templ.constr.vparamss.map(_.map(toMTree[m.Term.Param]))
       }
       val mctor = m.Ctor.Primary(Nil, m.Ctor.Name("this"), ctorparams)
       val mtempl = templ.toMTree[m.Template]
+
       if (modifiers.is(Trait))
-        m.Defn.Trait(Nil, mname, mtparams, mctor, mtempl)
+        m.Defn.Trait(modifiers, mname, mtparams, mctor, mtempl)
       else
-        m.Defn.Class(Nil, mname, mtparams, mctor, mtempl)
+        m.Defn.Class(modifiers, mname, mtparams, mctor, mtempl)
 
     case u.SuperCall(ctor, args) =>
       val mctor = u.withLoc(SuperCallLoc) { ctor.toMTree[m.Term] }
@@ -426,7 +502,7 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
     case t: d.ModuleDef =>
       val mname = m.Term.Name(t.name.show)
       val mtempl = t.impl.toMTree[m.Template]
-      m.Defn.Object(Nil, mname, mtempl)
+      m.Defn.Object(t.mods, mname, mtempl)
 
     // ============ IMPORTS ============
     case u.Import(imports) =>
@@ -459,9 +535,23 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       val mqual = u.withs(TypeMode, ExprLoc) { qual.toMTree[m.Type] }
       m.Ctor.Ref.Project(mqual, m.Ctor.Name(name.show))
 
-    // ============ TEMPLATES ============
+    // ============ Annotations ============
+    case u.TermAnnot(arg, annots) =>
+      val marg = arg.toMTree[m.Term]
+      val mannots = annots.map { annot =>
+        val mannot = u.withs(TermMode, SuperCallLoc) { annot.toMTree[m.Term] }
+        m.Mod.Annot(mannot)
+      }
+      m.Term.Annotate(marg, mannots)
 
-    // ============ MODIFIERS ============
+    case u.TypeAnnot(arg, annots) =>
+      val marg = arg.toMTree[m.Type]
+      val mannots = annots.map { annot =>
+        val mannot = u.withs(TermMode, SuperCallLoc) { annot.toMTree[m.Term] }
+        m.Mod.Annot(mannot)
+      }
+      m.Type.Annotate(marg, mannots)
+
     case _ => println(tree); ???
   }).asInstanceOf[T]
 

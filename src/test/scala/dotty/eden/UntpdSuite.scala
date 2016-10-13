@@ -221,9 +221,9 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("(f: ((A, A) => B) => (C, D) => D)")
   checkUntpd("var a: o.type = ???")
   checkUntpd("var a: o.x.type = ???")
-  checkUntpd("val a: A | B = ???", verbose = true)
-  checkUntpd("val a: A | B | C = ???", verbose = true)
-  checkUntpd("val a: A & B & C = ???", verbose = true)
+  checkUntpd("val a: A | B = ???")
+  checkUntpd("val a: A | B | C = ???")
+  checkUntpd("val a: A & B & C = ???")
 
   // imports
   checkUntpd("import a._")
@@ -235,17 +235,45 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("import a.b, a.c")
   checkUntpd("import a.b.{c, d}, a.{c => x, d => _, f}")
 
-  // nested definitions
+  // annotation
+  // checkUntpd("@static val a: m.A = ???")
+  checkUntpd("@static() val a: m.A = ???")
+  checkUntpd("@static() @volatile() val a: m.A = ???")
+  // checkUntpd("@main class App { println(100) }")
+  checkUntpd("@main() class App { println(100) }")
+  checkUntpd("@optimize(5) def fact(n: Int) = ???")
+  checkUntpd("@optimize(5) @log(3) def fact(n: Int) = ???")
+  // checkUntpd("(x: @unchecked)")
+  checkUntpd("(x: @unchecked())")
+  //checkUntpd("(x: @unchecked @optimize)")
+  checkUntpd("(x: @unchecked() @optimize(3))")
+  // checkUntpd("trait Foo[-T] extends Comparator[T @uncheckedVariance]")
+  checkUntpd("trait Foo[-T] extends Comparator[T @uncheckedVariance()]")
+  checkUntpd("trait Foo[-T] extends Comparator[T @uncheckedVariance() @annot(4)]")
+  checkUntpd("trait Function0[@specialized(Unit, Int, Double) T]")
 
   // modifiers
-  // checkUntpd("class A[T <: C[T]](val a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; val x: Int }")
-  // checkUntpd("class A[T <: C[T]](var a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; val x: Int }")
-  // checkUntpd("class A[T <: C[T]](private var a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; val x: Int }")
+  // checkUntpd("private val a: Int = 3")
+  // checkUntpd("private[core] val a: Int = 3")
+  // checkUntpd("private[this] val a: Int = 3")
+  // checkUntpd("protected val a: Int = 3")
+  // checkUntpd("protected[core] val a: Int = 3")
+  // checkUntpd("class A[T <: C[T]](a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; protected val x: Int = 4 }")
+  // checkUntpd("class A[T <: C[T]](val a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; protected val x: Int = 4 }")
+  // checkUntpd("class A[T <: C[T]](var a: Int) extends B(a) with C[T] { private[core] def test(x: Int): Boolean; protected[core] val x: Int }")
+  // checkUntpd("class A[T <: C[T]](private var a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; private[this] val x: Int }")
 
   // other features
-//  - TypeLambdaTree
-//  - JavaSeqLiteral
-//  - Closure
-//  - Annotated
+  // - TypeLambdaTree
+  // - Annotated
+  // - Eta
+  // - Named type var: [type X]
 
+  // scala tour code snipeets
+  // checkUntpd("""
+  //   abstract class Buffer {
+  //     type T
+  //     val element: T
+  //   }
+  // """)
 }
