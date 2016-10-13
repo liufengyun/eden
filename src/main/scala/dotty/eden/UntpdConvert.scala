@@ -322,9 +322,7 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       m.Defn.Val(Nil, List(m.Pat.Var.Term(m.Term.Name(name.show))), mtpt, mrhs)
 
     case u.VarDef(modifiers, name, tpt, rhs) =>
-      val mrhs = if (rhs.isEmpty)
-        None
-      else if (rhs.isInstanceOf[d.Ident] && rhs.asInstanceOf[d.Ident].name == nme.WILDCARD)
+      val mrhs = if (rhs.isInstanceOf[d.Ident] && rhs.asInstanceOf[d.Ident].name == nme.WILDCARD)
         None
       else
         u.withMode(TermMode) { Some(rhs.toMTree[m.Term]) }
