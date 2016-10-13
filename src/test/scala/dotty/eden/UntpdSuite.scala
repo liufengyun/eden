@@ -219,7 +219,8 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("var a: m.A#B#C = ???")
   checkUntpd("(f: (A => B) => (C, D) => D)")
   checkUntpd("(f: ((A, A) => B) => (C, D) => D)")
-
+  checkUntpd("var a: o.type = ???")
+  checkUntpd("var a: o.x.type = ???")
   // nested definitions
 
   // modifiers
@@ -231,8 +232,6 @@ class UntpdSuite extends EdenSuite {
 //  - TypeLambdaTree
 //  - AndTypeTree
 //  - OrTypeTree
-//  - SelectFromTypeTree
-//  - SingletonTypeTree
 //  - JavaSeqLiteral
 //  - Closure
 //  - Pair      // import {a => b}

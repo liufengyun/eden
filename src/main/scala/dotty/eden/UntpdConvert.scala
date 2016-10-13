@@ -239,6 +239,10 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       val mtret = tret.toMTree[m.Type]
       m.Type.Function(mtparams, mtret)
 
+    case t: d.SingletonTypeTree =>
+      val mref = u.withs(TermMode, ExprLoc) { t.ref.toMTree[m.Term.Ref] }
+      m.Type.Singleton(mref)
+
     // ============ PATTERNS ============
     case t: d.Match =>
       val mscrut = t.selector.toMTree[m.Term]
