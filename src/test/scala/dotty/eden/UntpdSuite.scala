@@ -3,8 +3,58 @@ package dotty.eden
 import scala.{meta => m}
 
 class UntpdSuite extends EdenSuite {
-  // terms
+  // literals
   checkUntpd("null")
+  checkUntpd("true")
+  checkUntpd("false")
+  checkUntpd("56")
+  checkUntpd("-56")
+  /*
+  checkUntpd("-56L")
+  checkUntpd("-56l")
+  checkUntpd("0x56")
+  checkUntpd("-0x56")
+  checkUntpd("-0x56L")
+  checkUntpd("-0x56l")
+  checkUntpd("56.45")
+  checkUntpd("-56.45")
+  checkUntpd("-56.45e10")
+  checkUntpd("-56.45e-10")
+  checkUntpd("-56.45e-10F")
+  checkUntpd("-56.45e-10f")
+  checkUntpd("-56.45e-10D")
+  checkUntpd("-56.45e-10d")
+  checkUntpd(".45")
+  checkUntpd(".45e10")
+  checkUntpd(".45e-10")
+  checkUntpd(".45e-10F")
+  checkUntpd(".45e-10f")
+  checkUntpd(".45e-10D")
+  checkUntpd(".45e-10d")
+  checkUntpd("-56.45E10")
+  checkUntpd("-56.45E-10")
+  checkUntpd("-56.45E-10F")
+  checkUntpd("-56.45E-10f")
+  checkUntpd("-56.45E-10D")
+  checkUntpd("-56.45E-10d")
+  checkUntpd("4E10")
+  checkUntpd("4E-10")
+  checkUntpd("4E-10F")
+  checkUntpd("4E-10f")
+  checkUntpd("4E-10D")
+  checkUntpd("4E-10d")
+  checkUntpd("'a'")
+  checkUntpd("'\u0041'")
+  checkUntpd("'\n'")
+  checkUntpd("'\t'")
+  checkUntpd("Hello,\nWorld!")
+  checkUntpd("This string contains a \" character.")
+  checkUntpd("\"\"\"the present string\n" +
+    "spans three\n" +
+    "lines.\"\"\""
+  ) */
+
+  // exprs
   checkUntpd("""println("hello, world")""")
   checkUntpd("println(42)")
   checkUntpd("f(this)")
