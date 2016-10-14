@@ -103,9 +103,15 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
   }
 
   object TermInfixOp {
-    def unapply(tree: InfixOp): Option[(Tree, TermName, Tree)] = {
+    def unapply(tree: InfixOp): Option[(Tree, TermName, List[Tree])] = {
       if (tree.op.isTypeName || loc != ExprLoc || mode != TermMode) return None
-      Some((tree.left, tree.op.asTermName, tree.right))
+
+      val args = tree.right match {
+        case Tuple(args) => args
+        case _ => List(tree.right)
+      }
+
+      Some((tree.left, tree.op.asTermName, args))
     }
   }
 

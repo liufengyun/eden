@@ -160,11 +160,11 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       val mtargs = u.withMode(TypeMode) { args.map(toMTree[m.Type]) }
       m.Term.ApplyType(mfun, mtargs)
 
-    case u.TermInfixOp(left, op, right) =>
+    case u.TermInfixOp(left, op, args) =>
       val mop = m.Term.Name(op.show)
       val mleft = left.toMTree[m.Term]
-      val mright = right.toMTree[m.Term]
-      m.Term.ApplyInfix(mleft, mop, Nil, List(mright))
+      val mright = args.map(toMTree[m.Term])
+      m.Term.ApplyInfix(mleft, mop, Nil, mright)
 
     case u.TermPostfixOp(left, op) =>
       val mop = m.Term.Name(op.show)
