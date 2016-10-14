@@ -240,7 +240,7 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       val mbody = t.expr.toMTree[m.Term]
       m.Term.ForYield(menums, mbody)
 
-    case t: d.Tuple =>
+    case t: d.Tuple if u.mode == TermMode =>
       val mtrees = t.trees.map(toMTree[m.Term])
       if (mtrees.isEmpty)
         m.Lit(())
@@ -315,6 +315,10 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       val mlhs = u.withMode(TypeMode) { lhs.toMTree[m.Type] }
       val mrhs = u.withMode(TypeMode) { rhs.toMTree[m.Type] }
       m.Type.And(mlhs, mrhs)
+
+    case t: d.Tuple if u.mode == TypeMode =>
+      val mtypes = t.trees.map(toMTree[m.Type])
+      m.Type.Tuple(mtypes)
 
     // ============ PATTERNS ============
     case t: d.Match =>

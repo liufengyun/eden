@@ -234,6 +234,9 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("val a: A | B = ???")
   checkUntpd("val a: A | B | C = ???")
   checkUntpd("val a: A & B & C = ???")
+  checkUntpd("val a: M[A + (B, C)] = ???")
+  checkUntpd("val a: M[(A)] = ???")
+  checkUntpd("val a: Option[(Int, String)] = ???")
   // checkUntpd("trait A[type K, type V]")
   // checkUntpd("new A[K = String, V = Int]")
 
