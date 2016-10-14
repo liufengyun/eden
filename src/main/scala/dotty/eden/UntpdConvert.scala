@@ -224,11 +224,20 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
         case _ => t.toMTree[m.Term]
       }
 
-      val cases = if (t.handler.isEmpty) Nil else t.handler.asInstanceOf[d.Match].cases
       val mexpr = u.withs(TermMode, ExprLoc) { transform(t.expr) }
-      val mcases = cases.map(toMTree[m.Case])
       val mfinalizer = if (t.finalizer.isEmpty) None else Some(transform(t.finalizer))
-      m.Term.TryWithCases(mexpr, mcases, mfinalizer)
+
+      if (t.handler.isEmpty)
+        m.Term.TryWithCases(mexpr, Nil, mfinalizer)
+      else if (t.handler.isInstanceOf[d.Match]) {
+        val cases =  t.handler.asInstanceOf[d.Match].cases
+        val mcases = cases.map(toMTree[m.Case])
+        m.Term.TryWithCases(mexpr, mcases, mfinalizer)
+      }
+      else {
+        val term = t.handler.toMTree[m.Term]
+        m.Term.TryWithTerm(mexpr, term, mfinalizer)
+      }
 
     case t: d.ForDo =>
       val menums = toEnums(t.enums)

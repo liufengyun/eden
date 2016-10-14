@@ -90,6 +90,7 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("try { throw new A(4) } catch { case _: Throwable => 4 } finally { println(6) }")
   checkUntpd("try f(4) catch { case _: Throwable => 4 } finally println(6)")
   checkUntpd("try f(4) catch { case _: Throwable => 4 }")
+  checkUntpd("try f(4) catch rescue")
   checkUntpd("try f(4) finally println(6)")
   checkUntpd("try {} finally println(6)")
   checkUntpd("for (arg <- args) result += arg * arg")
