@@ -178,6 +178,7 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("a match { case x::xs =>  }")
   checkUntpd("a match { case x::y::xs =>  }")
   checkUntpd("a match { case (x: Int)::(y @ Some(_))::xs =>  }")
+  checkUntpd("a match { case x::xs if x > 0 =>  }")
 
   // definitions
   checkUntpd("val a = 3")
