@@ -151,9 +151,9 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       val narg  = t.arg.toMTree[m.Term]
       m.Term.Arg.Named(mname, narg)
 
-    case u.RepeatedParam(name) =>
-      val mterm = m.Term.Name(name.show)
-      m.Term.Arg.Repeated(mterm)
+    case u.TermRepeated(tree) =>
+      val mtree = tree.toMTree[m.Term]
+      m.Term.Arg.Repeated(mtree)
 
     case u.TermTypeApply(fun, args) =>
       val mfun = u.withMode(TermMode) { fun.toMTree[m.Term] }
@@ -337,6 +337,10 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
     case t: d.Tuple if u.mode == TypeMode =>
       val mtypes = t.trees.map(toMTree[m.Type])
       m.Type.Tuple(mtypes)
+
+    case u.TypeRepeated(tp) =>
+      val mtype = tp.toMTree[m.Type]
+      m.Type.Arg.Repeated(mtype)
 
     // ============ PATTERNS ============
     case t: d.Match =>
@@ -574,7 +578,11 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       }
       m.Type.Annotate(marg, mannots)
 
-    case _ => println(tree); ???
+    case _ =>
+      println("mode: " + u.mode)
+      println("location: " + u.loc)
+      println(tree);
+      ???
   }).asInstanceOf[T]
 
 }

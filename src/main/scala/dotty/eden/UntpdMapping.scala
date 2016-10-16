@@ -136,10 +136,14 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
     }
   }
 
-  object RepeatedParam {
-    def unapply(tree: Tree): Option[Ident] = tree match {
-      case d.Typed(ident: Ident, d.Ident(tpnme.WILDCARD_STAR)) => Some(ident)
-      case _ => None
+  object TermRepeated {
+    def unapply(tree: Typed): Option[Tree] = {
+      if (mode != TermMode || loc != ExprLoc) return None
+
+      tree match {
+        case d.Typed(tree: Tree, d.Ident(tpnme.WILDCARD_STAR)) => Some(tree)
+        case _ => None
+      }
     }
   }
 
@@ -261,6 +265,17 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
     def unapply(fun: Function): Option[(List[Tree], Tree)] = {
       if (mode != TypeMode) return None
       Some((fun.args, fun.body))
+    }
+  }
+
+  object TypeRepeated {
+    def unapply(tree: PostfixOp): Option[Tree] = {
+      if (mode != TypeMode || loc != ParamLoc) return None
+
+      tree match {
+        case PostfixOp(tree, nme.raw.STAR) => Some(tree)
+        case _ => None
+      }
     }
   }
 
@@ -463,6 +478,7 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
       Some((tree.mods, tree.name, tree.tparams, bounds, ctxBounds))
     }
   }
+
   // ============ IMPORTS ============
   object Import {
     def unapply(tree: Tree): Option[List[(Tree, List[Tree])]] = tree match {
