@@ -183,6 +183,21 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("a match { case (Some(x), None) =>  }")
   checkUntpd("a match { case () =>  }")
   checkUntpd("a match { case (x) =>  }")
+  // checkUntpd("a match { case M(a, _*) => }")
+  /*
+  checkUntpd("a match { case (_:_*) =>  }")
+  checkUntpd("a match { case Some[Int](x) => }")
+  checkUntpd("a match { case x: Option[Int] => }")
+  checkUntpd("a match { case x: A#B => }")
+  checkUntpd("a match { case x: c.M => }", verbose = true)
+  checkUntpd("a match { case x: c.type => }", verbose = true)
+  checkUntpd("a match { case x: _ => }")
+  checkUntpd("a match { case x: M[(A, B)] => }")
+  checkUntpd("a match { case x: ((A, B) => C) => }")
+  checkUntpd("a match { case x: (A | B) => }")
+  checkUntpd("a match { case x: A & B => }")
+  checkUntpd("a match { case x: A @x @y => }")
+  */
 
   // definitions
   checkUntpd("val a = 3")

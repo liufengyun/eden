@@ -362,7 +362,7 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
 
     case u.PatExtract(ref, targs, args) =>
       val mref = u.withMode(TermMode) { ref.toMTree[m.Term.Ref] }
-      val mtargs = targs.map(toMTree[m.Pat.Type])
+      val mtargs = u.withMode(TypeMode) { targs.map(toMTree[m.Pat.Type]) }
       val margs = args.map(toMTree[m.Pat.Arg])
       m.Pat.Extract(mref, mtargs, margs)
 
