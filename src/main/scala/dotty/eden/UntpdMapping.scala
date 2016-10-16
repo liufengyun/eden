@@ -122,6 +122,13 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
     }
   }
 
+  object TermPrefixOp {
+    def unapply(tree: PrefixOp): Option[(TermName, Tree)] = {
+      if (tree.op.isTypeName || mode != TermMode || loc != ExprLoc) return None
+      Some((tree.op.asTermName, tree.od))
+    }
+  }
+
   object RepeatedParam {
     def unapply(tree: Tree): Option[Ident] = tree match {
       case d.Typed(ident: Ident, d.Ident(tpnme.WILDCARD_STAR)) => Some(ident)

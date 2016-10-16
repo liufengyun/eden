@@ -85,6 +85,8 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("(b, c, d) +: a")
   checkUntpd("a*")
   checkUntpd("++a")
+  checkUntpd("!a")
+  checkUntpd("~a")
   checkUntpd("a++")
   checkUntpd("a = b")
   checkUntpd("{ a = 1; b += 2 }")
