@@ -299,6 +299,19 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
     }
   }
 
+  object PatInfixExtract {
+    def unapply(tree: InfixOp): Option[(Tree, TermName, List[Tree])] = {
+      if (loc != PatLoc) return None
+
+      val args = tree.right match {
+        case Tuple(args) => args
+        case _ => List(tree.right)
+      }
+
+      Some((tree.left, tree.op.asTermName, args))
+    }
+  }
+
   object PatVarIdent {
     def unapply(tree: Ident): Option[Name] = {
       if (loc != PatLoc || mode != TermMode || tree.isInstanceOf[BackquotedIdent])

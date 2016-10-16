@@ -366,6 +366,12 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       val margs = args.map(toMTree[m.Pat.Arg])
       m.Pat.Extract(mref, mtargs, margs)
 
+    case u.PatInfixExtract(left, op, args) =>
+      val mop = m.Term.Name(op.show)
+      val mleft = left.toMTree[m.Pat]
+      val margs = args.map(toMTree[m.Pat.Arg])
+      m.Pat.ExtractInfix(mleft, mop, margs)
+
     case u.PatWildcard() =>
       m.Pat.Wildcard()
 
