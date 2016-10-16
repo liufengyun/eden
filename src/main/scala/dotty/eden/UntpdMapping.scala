@@ -88,7 +88,12 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
 
   object TermIdent {
     def unapply(tree: Ident): Option[Name] = {
-      if (loc != ExprLoc || mode != TermMode) return None
+      if (mode != TermMode) return None
+
+      if (loc != ExprLoc  &&
+        !(loc == PatLoc && tree.isInstanceOf[BackquotedIdent])
+      ) return None
+
       val name = tree.name
       if (name.isTypeName || tree.name == nme.WILDCARD) None
       else Some(name)
@@ -296,8 +301,11 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
 
   object PatVarIdent {
     def unapply(tree: Ident): Option[Name] = {
-      if (loc != PatLoc || mode != TermMode) return None
+      if (loc != PatLoc || mode != TermMode || tree.isInstanceOf[BackquotedIdent])
+        return None
+
       val name = tree.name
+
       if (name.isTypeName || tree.name == nme.WILDCARD) None
       else Some(name)
     }

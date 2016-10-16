@@ -174,6 +174,7 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("a match { case Some(x: Int) | Some(x: String) => x; case _ => y }")
   checkUntpd("a match { case Some(x: Int) | Some(x: String) | Some(x: Boolean) => x; case _ => y }")
   checkUntpd("a match { case Some(x: Int) | Some(x: String) | x: Boolean => x; case _ => y }")
+  checkUntpd("a match { case a.name => ; case _: b.M => ; case `x` => }")
 
   // definitions
   checkUntpd("val a = 3")

@@ -122,7 +122,7 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       else m.Term.Name(name.show)
 
     case u.TermSelect(pre, name) =>
-      val mpre = pre.toMTree[m.Term]
+      val mpre = u.withLoc(ExprLoc) { pre.toMTree[m.Term] }
       val mname = m.Term.Name(name.show)
       m.Term.Select(mpre, mname)
 
