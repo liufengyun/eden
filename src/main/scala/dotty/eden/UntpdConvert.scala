@@ -176,6 +176,10 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       val mright = right.toMTree[m.Term]
       m.Term.ApplyUnary(mop, mright)
 
+    case u.TermEta(tree) =>
+      val mtree = tree.toMTree[m.Term]
+      m.Term.Eta(mtree)
+
     case u.TermTyped(expr, tpt) =>
       val mexpr = expr.toMTree[m.Term]
       val mtpt = u.withMode(TypeMode) { tpt.toMTree[m.Type] }

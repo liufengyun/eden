@@ -270,7 +270,8 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("f(z => if (z) x else y)")
   checkUntpd("f(x => x.map(f))")
   checkUntpd("f(x => x.map(y => y + 1))")
-  checkUntpd("val f: Int => String = _.toString ")
+  checkUntpd("val f: Int => String = _.toString")
+  checkUntpd("f _")
 
   // types
   // checkUntpd("var a: A with B = ???")
