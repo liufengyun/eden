@@ -258,7 +258,7 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       val mbody = t.expr.toMTree[m.Term]
       m.Term.ForYield(menums, mbody)
 
-    case t: d.Tuple if u.mode == TermMode =>
+    case t: d.Tuple if u.mode == TermMode && u.loc == ExprLoc =>
       val mtrees = t.trees.map(toMTree[m.Term])
       if (mtrees.isEmpty)
         m.Lit(())
@@ -391,6 +391,13 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       pats.foldRight(mpat) { (pat, alt) =>
         m.Pat.Alternative(pat, alt)
       }
+
+    case t: d.Tuple if u.mode == TermMode && u.loc == PatLoc =>
+      val mtrees = t.trees.map(toMTree[m.Pat])
+      if (mtrees.isEmpty)
+        m.Lit(())
+      else
+        m.Pat.Tuple(mtrees)
 
     // ============ DECLS ============
     case u.VarDcl(modifiers, name, tpt) =>
