@@ -259,6 +259,7 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("trait A { self: B => def test(x: Int): Boolean; val x: Int; type Age = Int }")
   checkUntpd("trait A { self: B => def test(x: Int): Boolean; val x: Int; type Container[T] = List[T] }")
   checkUntpd("trait A[T] extends B with C { def test(x: Int): Boolean; val x: Int }")
+  checkUntpd("trait Service[F[_]]")
   checkUntpd("class A[T] extends B with C { def test(x: Int): Boolean; val x: Int }")
   checkUntpd("class A[+T] extends B with C { def test(x: Int): Boolean; val x: Int }")
   checkUntpd("class A[-T] extends B with C { def test(x: Int): Boolean; val x: Int }")
