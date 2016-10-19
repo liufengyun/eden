@@ -344,6 +344,7 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("(x: @unchecked())")
   //checkUntpd("(x: @unchecked @optimize)")
   checkUntpd("(x: @unchecked() @optimize(3))")
+  checkUntpd("(x: @unchecked()): @optimize(3)", verbose = true)
   // checkUntpd("trait Foo[-T] extends Comparator[T @uncheckedVariance]")
   checkUntpd("trait Foo[-T] extends Comparator[T @uncheckedVariance()]")
   checkUntpd("trait Foo[-T] extends Comparator[T @uncheckedVariance() @annot(4)]")
