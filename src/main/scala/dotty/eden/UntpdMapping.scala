@@ -222,23 +222,31 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
     }
   }
 
+  object TypeApply {
+    def unapply(tree: AppliedTypeTree): Option[(Tree, List[Tree])] = {
+      if (mode != TypeMode || loc == PatLoc) return None
+      Some((tree.tpt, tree.args))
+    }
+  }
+
   object TypeInfixOp {
     def unapply(tree: InfixOp): Option[(Tree, TypeName, Tree)] = {
-      if (mode != TypeMode || tree.op == tpnme.raw.BAR || tree.op == tpnme.raw.AMP) return None
+      if (mode != TypeMode || loc == PatLoc ||
+        tree.op == tpnme.raw.BAR || tree.op == tpnme.raw.AMP) return None
       Some((tree.left, tree.op.asTypeName, tree.right))
     }
   }
 
   object TypeOr {
     def unapply(tree: InfixOp): Option[(Tree, Tree)] = {
-      if (mode != TypeMode || tree.op != tpnme.raw.BAR) return None
+      if (mode != TypeMode || loc == PatLoc || tree.op != tpnme.raw.BAR) return None
       Some((tree.left, tree.right))
     }
   }
 
   object TypeAnd {
     def unapply(tree: InfixOp): Option[(Tree, Tree)] = {
-      if (mode != TypeMode || tree.op != tpnme.raw.AMP) return None
+      if (mode != TypeMode || loc == PatLoc || tree.op != tpnme.raw.AMP) return None
       Some((tree.left, tree.right))
     }
   }
@@ -259,7 +267,7 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
   object TypeProject {
     def unapply(tree: Select): Option[(Tree, TypeName)] = {
       if (!tree.name.isTypeName ||
-        mode != TypeMode ||
+        mode != TypeMode || loc == PatLoc ||
         !TypeSelect.isProject(tree.qualifier)) return None
 
       Some((tree.qualifier, tree.name.asTypeName))
@@ -268,8 +276,25 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
 
   object TypeFunction {
     def unapply(fun: Function): Option[(List[Tree], Tree)] = {
-      if (mode != TypeMode) return None
+      if (mode != TypeMode || loc == PatLoc) return None
       Some((fun.args, fun.body))
+    }
+  }
+
+  object TypeTuple {
+    def unapply(t: Tuple): Option[(List[Tree])] = {
+      if (mode != TypeMode || loc == PatLoc) return None
+      Some(t.trees)
+    }
+  }
+
+  object TypeBounds {
+    def unapply(bound: TypeBoundsTree): Option[(Option[Tree], Option[Tree])] = {
+      if (mode != TypeMode || loc == PatLoc) return None
+
+      val mlo = if (bound.lo.isEmpty) None else Some(bound.lo)
+      val mhi = if (bound.hi.isEmpty) None else Some(bound.hi)
+      Some((mlo, mhi))
     }
   }
 
@@ -344,6 +369,69 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
       if (loc != PatLoc || mode != TermMode) return None
       val d.Typed(lhs, rhs) = tree
       Some((lhs, rhs))
+    }
+  }
+
+
+  object PatTypeApply {
+    def unapply(tree: AppliedTypeTree): Option[(Tree, List[Tree])] = {
+      if (mode != TypeMode || loc != PatLoc) return None
+      Some((tree.tpt, tree.args))
+    }
+  }
+
+  object PatTypeInfixOp {
+    def unapply(tree: InfixOp): Option[(Tree, TypeName, Tree)] = {
+      if (mode != TypeMode || loc != PatLoc ||
+        tree.op == tpnme.raw.BAR || tree.op == tpnme.raw.AMP) return None
+      Some((tree.left, tree.op.asTypeName, tree.right))
+    }
+  }
+
+  object PatTypeOr {
+    def unapply(tree: InfixOp): Option[(Tree, Tree)] = {
+      if (mode != TypeMode || loc != PatLoc || tree.op != tpnme.raw.BAR) return None
+      Some((tree.left, tree.right))
+    }
+  }
+
+  object PatTypeAnd {
+    def unapply(tree: InfixOp): Option[(Tree, Tree)] = {
+      if (mode != TypeMode || loc != PatLoc || tree.op != tpnme.raw.AMP) return None
+      Some((tree.left, tree.right))
+    }
+  }
+
+  object PatTypeProject {
+    def unapply(tree: Select): Option[(Tree, TypeName)] = {
+      if (!tree.name.isTypeName ||
+        mode != TypeMode || loc != PatLoc ||
+        !TypeSelect.isProject(tree.qualifier)) return None
+
+      Some((tree.qualifier, tree.name.asTypeName))
+    }
+  }
+
+  object PatTypeFunction {
+    def unapply(fun: Function): Option[(List[Tree], Tree)] = {
+      if (mode != TypeMode || loc != PatLoc) return None
+      Some((fun.args, fun.body))
+    }
+  }
+
+  object PatTypeTuple {
+    def unapply(t: Tuple): Option[(List[Tree])] = {
+      if (mode != TypeMode || loc != PatLoc) return None
+      Some(t.trees)
+    }
+  }
+
+  object PatTypeWildcard {
+    def unapply(bound: TypeBoundsTree): Boolean = {
+      if (mode != TypeMode || loc != PatLoc) return false
+
+      // concatenate if predicate with return predicate harms readability
+      bound.lo.isEmpty && bound.hi.isEmpty
     }
   }
 

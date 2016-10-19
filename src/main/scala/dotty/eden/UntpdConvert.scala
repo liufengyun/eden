@@ -281,9 +281,9 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
     case u.TypeIdent(name) =>
       m.Type.Name(name.show)
 
-    case t: d.AppliedTypeTree =>
-      val mtpt = u.withMode(TypeMode) { t.tpt.toMTree[m.Type] }
-      val margs = u.withMode(TypeMode) { t.args.map(toMTree[m.Type]) }
+    case u.TypeApply(tpt, args) =>
+      val mtpt = u.withMode(TypeMode) { tpt.toMTree[m.Type] }
+      val margs = u.withMode(TypeMode) { args.map(toMTree[m.Type]) }
       m.Type.Apply(mtpt, margs)
 
     case u.TypeInfixOp(lhs, op, rhs) =>
@@ -334,9 +334,14 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       val mrhs = u.withMode(TypeMode) { rhs.toMTree[m.Type] }
       m.Type.And(mlhs, mrhs)
 
-    case t: d.Tuple if u.mode == TypeMode =>
-      val mtypes = t.trees.map(toMTree[m.Type])
+    case u.TypeTuple(tpts) =>
+      val mtypes = tpts.map(toMTree[m.Type])
       m.Type.Tuple(mtypes)
+
+    case u.TypeBounds(lo, hi) =>
+      val mlo = u.withMode(TypeMode) { lo.map(toMTree[m.Type]) }
+      val mhi = u.withMode(TypeMode) { hi.map(toMTree[m.Type]) }
+      m.Type.Bounds(mlo, mhi)
 
     case u.TypeRepeated(tp) =>
       val mtype = tp.toMTree[m.Type]
@@ -398,6 +403,46 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
         m.Lit(())
       else
         m.Pat.Tuple(mtrees)
+
+    // pat types
+
+    case u.PatTypeApply(tpt, args) =>
+      val mtpt = tpt.toMTree[m.Pat.Type]
+      val margs = args.map(toMTree[m.Pat.Type])
+      m.Pat.Type.Apply(mtpt, margs)
+
+    case u.PatTypeWildcard() =>
+      m.Pat.Type.Wildcard()
+
+    case u.PatTypeInfixOp(lhs, op, rhs) =>
+      val mop = m.Type.Name(op.show)
+      val mlhs = lhs.toMTree[m.Pat.Type]
+      val mrhs = rhs.toMTree[m.Pat.Type]
+      m.Pat.Type.ApplyInfix(mlhs, mop, mrhs)
+
+    case u.PatTypeProject(pre, name) =>
+      val mpre = pre.toMTree[m.Pat.Type]
+      val mname = m.Type.Name(name.show)
+      m.Pat.Type.Project(mpre, mname)
+
+    case u.PatTypeFunction(tparams, tret) =>
+      val mtparams = tparams.map(toMTree[m.Pat.Type])
+      val mtret = tret.toMTree[m.Pat.Type]
+      m.Pat.Type.Function(mtparams, mtret)
+
+    // case u.PatTypeOr(lhs, rhs) =>
+    //   val mlhs = lhs.toMTree[m.Pat.Type]
+    //   val mrhs = rhs.toMTree[m.Pat.Type]
+    //   m.Pat.Type.Or(mlhs, mrhs)
+
+    // case u.PatTypeAnd(lhs, rhs) =>
+    //   val mlhs = lhs.toMTree[m.Pat.Type]
+    //   val mrhs = rhs.toMTree[m.Pat.Type]
+    //   m.Pat.Type.And(mlhs, mrhs)
+
+    case u.PatTypeTuple(tpts) =>
+      val mtypes = tpts.map(toMTree[m.Pat.Type])
+      m.Pat.Type.Tuple(mtypes)
 
     // ============ DECLS ============
     case u.VarDcl(modifiers, name, tpt) =>
@@ -469,11 +514,6 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       val mrhs = u.withs(TermMode, ExprLoc) { default.map(toMTree[m.Term]) }
       val mtpt = u.withMode(TypeMode) { tpt.map(toMTree[m.Type.Arg]) }
       m.Term.Param(modifiers, mname, mtpt, mrhs)
-
-    case t: d.TypeBoundsTree =>
-      val mlo = if (t.lo.isEmpty) None else Some(u.withMode(TypeMode) { t.lo.toMTree[m.Type] })
-      val mhi = if (t.hi.isEmpty) None else Some(u.withMode(TypeMode) { t.hi.toMTree[m.Type] })
-      m.Type.Bounds(mlo, mhi)
 
     case u.ParamType(modifiers, name, tparams, bounds, ctxbounds) =>
       val mname = if (name.startsWith(nme.USCORE_PARAM_PREFIX))
