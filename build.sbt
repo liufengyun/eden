@@ -20,8 +20,6 @@ publishTo := {
   }
 }
 
-homepage := Some(url("https://github.com/liufengyun/eden"))
-
 licenses += "BSD" -> url("https://github.com/liufengyun/eden/blob/master/LICENSE.md")
 
 publishArtifact in Test := false
