@@ -105,33 +105,13 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("new List[Int](5)")
   checkUntpd("new List[List[Int]](List(5))")
   checkUntpd("new Map[Int, String]")
-  checkUntpd("new Map[Int, String]()",  // impossible to detect presence of ()
-    m.Term.New(
-      m.Template(
-        Nil,
-        List(
-          m.Term.ApplyType(
-              m.Ctor.Ref.Name("Map"),
-              List(m.Type.Name("Int"), m.Type.Name("String"))
-          )
-        ),
-        m.Term.Param(Nil, m.Name.Anonymous(), None, None),
-        None
-      )
-    )
+  checkUntpd(
+    "new Map[Int, String]()",  // impossible to detect presence of ()
+    "new Map[Int, String]"
   )
   checkUntpd("new Map[Int, String](a -> b)")
   checkUntpd("new B")
-  checkUntpd("new B()",  // impossible to detect presence of ()
-    m.Term.New(
-      m.Template(
-        Nil,
-        List(m.Ctor.Ref.Name("B")),
-        m.Term.Param(Nil, m.Name.Anonymous(), None, None),
-        None
-      )
-    )
-  )
+  checkUntpd("new B()",  "new B") // impossible to detect presence of ()
   checkUntpd("new c.B")
   checkUntpd("new C#B")
   checkUntpd("new o.C#B")

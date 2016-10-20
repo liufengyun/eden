@@ -11,14 +11,19 @@ import scala.meta.dialects.Dotty
 trait EdenSuite extends FunSuite {
   implicit val ctx = (new ContextBase).initialCtx
 
-  def dottyParse(code: String): untpd.Tree = {
+  implicit def dottyParse(code: String): untpd.Tree = {
     val (_, stats) = new Parser(new SourceFile("<meta>", code.toCharArray)).templateStatSeq()
     stats match { case List(stat) => stat; case stats => untpd.Thicket(stats) }
   }
 
+  implicit def metaParse(code: String): m.Stat = {
+    import scala.meta._
+    code.parse[m.Stat].get
+  }
+
   def checkUntpd(code: String, expect: m.Stat) = {
     test(code) {
-      val dTree: untpd.Tree = dottyParse(code)
+      val dTree: untpd.Tree = code
       var convertedTree: m.Tree = Convert.toMTreeUntpd(dTree)
       assert(expect.structure == convertedTree.structure)
     }
@@ -26,9 +31,8 @@ trait EdenSuite extends FunSuite {
 
   def checkUntpd(code: String, verbose: Boolean = false): Unit = {
     test(code) {
-      import scala.meta._
-      val mTree: m.Tree = code.parse[m.Stat].get
-      val dTree: untpd.Tree = dottyParse(code)
+      val mTree: m.Tree = code
+      val dTree: untpd.Tree = code
       var convertedTree: m.Tree = null
 
       try { convertedTree = Convert.toMTreeUntpd(dTree) } finally {
