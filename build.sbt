@@ -6,8 +6,9 @@ libraryDependencies += "ch.epfl.lamp"  %% "dotty"     % "0.1-20160930-93d4c8c-NI
 libraryDependencies += "org.scalameta" %% "scalameta" % "1.2.0"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.0" % "test"
 
+credentials += Credentials(Path.userHome / ".sbt" / ".credentials")
+
 lazy val mavenPublishingSettings = Seq(
-  credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"),
   publishMavenStyle := true,
   isSnapshot := version.value.contains("SNAPSHOT"),
   publishTo := {
