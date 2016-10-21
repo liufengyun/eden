@@ -24,7 +24,7 @@ trait EdenSuite extends FunSuite {
   def checkUntpd(code: String, expect: m.Stat) = {
     test(code) {
       val dTree: untpd.Tree = code
-      var convertedTree: m.Tree = Convert.toMTreeUntpd(dTree)
+      var convertedTree: m.Tree = dTree
       assert(expect.structure == convertedTree.structure)
     }
   }
@@ -35,7 +35,7 @@ trait EdenSuite extends FunSuite {
       val dTree: untpd.Tree = code
       var convertedTree: m.Tree = null
 
-      try { convertedTree = Convert.toMTreeUntpd(dTree) } finally {
+      try { convertedTree = dTree } finally {
         if (convertedTree == null || mTree.structure != convertedTree.structure || verbose)
           debug
       }
