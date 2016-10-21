@@ -60,7 +60,7 @@ lazy val macrosSetting = Seq(
 val dottyVersion = "0.1-SNAPSHOT"
 
 lazy val usageSetting = Seq(
-  scalacOptions ++= Seq("-Xprint:frontend"),
+  scalacOptions := Seq("-Xprint:parser,posttyper"),
 
   // Dotty version
   scalaVersion := dottyVersion,
