@@ -1,0 +1,3 @@
+sbt publishSigned
+sbt sonatypeReleaseAll
+
