@@ -39,54 +39,45 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       }
     }
 
-    // if (modifiers.is(Private) || modifiers.is(Protected)) {
-    //   val scope = if (modifiers.privateWithin == tpnme.EMPTY)
-    //     m.Name.Anonymous()
-    //   else
-    //     m.Name.Indeterminate(modifiers.privateWithin.show)
-
-    //   if (modifiers.is(Protected))
-    //     lb += m.Mod.Protected(scope)
-    //   else
-    //     lb += m.Mod.Private(scope)
-    // }
-
-    // if (modifiers.is(PrivateLocal)) {
-    //   val scope = m.Mod.Private(m.Name.Indeterminate("this"))
-    //   lb += m.Mod.Private(scope)
-    // }
-
-    // if (modifiers.is(Implicit)) lb += m.Mod.Implicit()
-
-    // if (modifiers.is(Final)) lb += m.Mod.Final()
-
-    // if (modifiers.is(Sealed)) lb += m.Mod.Sealed()
-
-    // if (modifiers.is(Override)) lb += m.Mod.Sealed()
-
-    // if (modifiers.is(Case)) lb += m.Mod.Case()
-
-    // if (modifiers.is(Abstract)) lb += m.Mod.Abstract()
-
-    // if (modifiers.is(AbsOverride)) {
-    //   lb += m.Mod.Abstract()
-    //   lb += m.Mod.Override()
-    // }
+    import d.{Mod => mod}
+    lb ++= modifiers.mods.map {
+      case _: mod.Override =>
+        m.Mod.Override()
+      case _: mod.Abstract =>
+        m.Mod.Abstract()
+      case _: mod.Final    =>
+        m.Mod.Final()
+      case _: mod.Implicit =>
+        m.Mod.Implicit()
+      case _: mod.Inline   =>
+        m.Mod.Inline()
+      case _: mod.Lazy     =>
+        m.Mod.Lazy()
+      case _: mod.Private  =>
+        println("privateWithin: " + modifiers.privateWithin)
+        if (modifiers.hasPrivateWithin)
+          m.Mod.Private(m.Name.Indeterminate(modifiers.privateWithin.show))
+        else
+          m.Mod.Private(m.Name.Anonymous())
+      case _: mod.Protected=>
+        println("privateWithin: " + modifiers.privateWithin)
+        if (modifiers.hasPrivateWithin)
+          m.Mod.Protected(m.Name.Indeterminate(modifiers.privateWithin.show))
+        else
+          m.Mod.Protected(m.Name.Anonymous())
+      case _: mod.Sealed   =>
+        m.Mod.Sealed()
+      case _: mod.Type     =>
+        ???
+      case _: mod.Val if u.loc == ParamLoc   =>
+        m.Mod.ValParam()
+      case _: mod.Var if u.loc == ParamLoc   =>
+        m.Mod.VarParam()
+      case _ => null
+    }.filter(_ != null)
 
     if (modifiers.is(Covariant)) lb += m.Mod.Covariant()
     if (modifiers.is(Contravariant)) lb += m.Mod.Contravariant()
-
-    // if (modifiers.is(Lazy)) lb += m.Mod.Lazy()
-
-    // if (modifiers.is(Inline)) lb += m.Mod.Inline()
-
-    // TODO: ValParam, VarParam
-    // if (modifiers.is(Param) && u.loc == ParamLoc && u.mode == TermMode) {
-    //   if (modifiers.is(Mutable))
-    //     lb += m.Mod.VarParam()
-    //   else
-    //     lb += m.Mod.ValParam()
-    // }
 
     lb.toList
   }

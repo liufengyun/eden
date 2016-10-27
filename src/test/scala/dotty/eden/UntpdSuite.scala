@@ -330,14 +330,14 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("trait Function0[@specialized(Unit, Int, Double) T]")
 
   // modifiers
-  // checkUntpd("private val a: Int = 3")
-  // checkUntpd("private[core] val a: Int = 3")
+  checkUntpd("private val a: Int = 3")
+  checkUntpd("private[core] val a: Int = 3")
   // checkUntpd("private[this] val a: Int = 3")
-  // checkUntpd("protected val a: Int = 3")
-  // checkUntpd("protected[core] val a: Int = 3")
-  // checkUntpd("class A[T <: C[T]](a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; protected val x: Int = 4 }")
-  // checkUntpd("class A[T <: C[T]](val a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; protected val x: Int = 4 }")
-  // checkUntpd("class A[T <: C[T]](var a: Int) extends B(a) with C[T] { private[core] def test(x: Int): Boolean; protected[core] val x: Int }")
+  checkUntpd("protected val a: Int = 3")
+  checkUntpd("protected[core] val a: Int = 3")
+  checkUntpd("class A[T <: C[T]](a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; protected val x: Int = 4 }")
+  checkUntpd("class A[T <: C[T]](val a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; protected val x: Int = 4 }")
+  checkUntpd("class A[T <: C[T]](var a: Int) extends B(a) with C[T] { private[core] def test(x: Int): Boolean; protected[core] val x: Int }")
   // checkUntpd("class A[T <: C[T]](private var a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; private[this] val x: Int }")
 
   // other features
