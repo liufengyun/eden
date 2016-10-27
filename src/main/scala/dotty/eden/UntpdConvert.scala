@@ -54,15 +54,17 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       case _: mod.Lazy     =>
         m.Mod.Lazy()
       case _: mod.Private  =>
-        println("privateWithin: " + modifiers.privateWithin)
         if (modifiers.hasPrivateWithin)
           m.Mod.Private(m.Name.Indeterminate(modifiers.privateWithin.show))
+        else if (modifiers is Local)
+          m.Mod.Private(m.Term.This(m.Name.Anonymous()))
         else
           m.Mod.Private(m.Name.Anonymous())
       case _: mod.Protected=>
-        println("privateWithin: " + modifiers.privateWithin)
         if (modifiers.hasPrivateWithin)
           m.Mod.Protected(m.Name.Indeterminate(modifiers.privateWithin.show))
+        else if (modifiers is Local)
+          m.Mod.Protected(m.Term.This(m.Name.Anonymous()))
         else
           m.Mod.Protected(m.Name.Anonymous())
       case _: mod.Sealed   =>
