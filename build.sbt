@@ -4,7 +4,7 @@ lazy val edenSetting = Seq(
   organization := "me.fengy",
   scalaVersion := "2.11.8",
 
-  libraryDependencies += "ch.epfl.lamp"  %% "dotty"     % "0.1-20160930-93d4c8c-NIGHTLY",
+  libraryDependencies += "ch.epfl.lamp"  %% "dotty"     % "0.1-20161026-557d448-NIGHTLY",
   libraryDependencies += "org.scalameta" %% "scalameta" % "1.2.0",
   libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.0" % "test",
 
