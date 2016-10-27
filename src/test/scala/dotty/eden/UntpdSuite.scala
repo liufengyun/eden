@@ -312,19 +312,19 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("import a.b.{c, d}, a.{c => x, d => _, f}")
 
   // annotation
-  // checkUntpd("@static val a: m.A = ???")
+  checkUntpd("@static val a: m.A = ???", "@static() val a: m.A = ???")
   checkUntpd("@static() val a: m.A = ???")
   checkUntpd("@static() @volatile() val a: m.A = ???")
-  // checkUntpd("@main class App { println(100) }")
+  checkUntpd("@main class App { println(100) }", "@main() class App { println(100) }")
   checkUntpd("@main() class App { println(100) }")
   checkUntpd("@optimize(5) def fact(n: Int) = ???")
   checkUntpd("@optimize(5) @log(3) def fact(n: Int) = ???")
-  // checkUntpd("(x: @unchecked)")
+  checkUntpd("(x: @unchecked)", "(x: @unchecked())")
   checkUntpd("(x: @unchecked())")
-  //checkUntpd("(x: @unchecked @optimize)")
+  checkUntpd("(x: @unchecked @optimize)", "(x: @unchecked() @optimize())")
   checkUntpd("(x: @unchecked() @optimize(3))")
   checkUntpd("(x: @unchecked()): @optimize(3)")
-  // checkUntpd("trait Foo[-T] extends Comparator[T @uncheckedVariance]")
+  checkUntpd("trait Foo[-T] extends Comparator[T @uncheckedVariance]", "trait Foo[-T] extends Comparator[T @uncheckedVariance()]")
   checkUntpd("trait Foo[-T] extends Comparator[T @uncheckedVariance()]")
   checkUntpd("trait Foo[-T] extends Comparator[T @uncheckedVariance() @annot(4)]")
   checkUntpd("trait Function0[@specialized(Unit, Int, Double) T]")
@@ -342,6 +342,7 @@ class UntpdSuite extends EdenSuite {
 
   // other features
   // - TypeLambdaTree
+  // - secondary constructors
 
   // scala tour code snipeets
   // checkUntpd("""
