@@ -21,7 +21,7 @@ trait EdenSuite extends FunSuite {
     code.parse[m.Stat].get
   }
 
-  def checkUntpd(code: String, expect: m.Stat) = {
+  def syntactic(code: String, expect: m.Stat) = {
     test(code) {
       val dTree: untpd.Tree = code
       var convertedTree: m.Tree = dTree
@@ -29,7 +29,7 @@ trait EdenSuite extends FunSuite {
     }
   }
 
-  def checkUntpd(code: String, verbose: Boolean = false): Unit = {
+  def syntactic(code: String, verbose: Boolean = false): Unit = {
     test(code) {
       val mTree: m.Tree = code
       val dTree: untpd.Tree = code
