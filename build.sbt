@@ -1,3 +1,13 @@
+lazy val metaVersion = "1.3.0.522"
+lazy val dottyVersion = "0.1-SNAPSHOT"
+
+lazy val common = Seq(
+  resolvers += Resolver.url(
+    "scalameta-bintray",
+    url("https://dl.bintray.com/scalameta/maven")
+  )(Resolver.ivyStylePatterns)
+)
+
 lazy val edenSetting = Seq(
   name := "eden",
   version := "0.1",
@@ -5,7 +15,7 @@ lazy val edenSetting = Seq(
   scalaVersion := "2.11.8",
 
   libraryDependencies += "ch.epfl.lamp"  %% "dotty"     % "0.1-20161026-557d448-NIGHTLY",
-  libraryDependencies += "org.scalameta" %% "scalameta" % "1.3.0.522",
+  libraryDependencies += "org.scalameta" %% "scalameta" % metaVersion,
   libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.0" % "test",
 
   credentials += Credentials(Path.userHome / ".sbt" / ".credentials"),
@@ -41,23 +51,17 @@ lazy val edenSetting = Seq(
       </developer>
     </developers>
   )
-)
+) ++ common
 
 lazy val macrosSetting = Seq(
   name := "macros",
   version := "0.1",
   scalaVersion := "2.11.8",
 
-  resolvers += Resolver.url(
-    "scalameta-bintray",
-    url("https://dl.bintray.com/scalameta/maven")
-  )(Resolver.ivyStylePatterns),
-
-  libraryDependencies += "org.scalameta" %% "scalameta" % "1.3.0.522",
+  libraryDependencies += "org.scalameta" %% "scalameta" % metaVersion,
   addCompilerPlugin("org.scalameta" % "paradise_2.11.8" % "3.0.0.100")
-)
+) ++ common
 
-val dottyVersion = "0.1-SNAPSHOT"
 
 lazy val usageSetting = Seq(
   scalacOptions := Seq("-Xprint:parser,posttyper"),
@@ -87,7 +91,7 @@ lazy val usageSetting = Seq(
 
   // Bridge which allows REPL and compilation via dotty
   scalaCompilerBridgeSource := ("ch.epfl.lamp" % "dotty-bridge" % "0.1.1-20160906-75f4400-NIGHTLY" % "component").sources()
-)
+) ++ common
 
 lazy val eden = (project in file(".")).
   settings(edenSetting: _*)
@@ -98,4 +102,3 @@ lazy val macros = (project in file("macros")).
 lazy val usage = (project in file("usage")).
   settings(usageSetting: _*).
   dependsOn(macros)
-
