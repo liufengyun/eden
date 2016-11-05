@@ -197,6 +197,9 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("var a, b = 3")
   checkUntpd("var a: Int = _")
   checkUntpd("var Some(Some(x)) = a")
+  checkUntpd("var (Some(_), _) = a")
+  checkUntpd("val _ = a")
+  checkUntpd("var _ = a")
 
   checkUntpd("def f(x: Int): Int = x*x")
   checkUntpd("def f(x: Int = 5): Int = x*x")
