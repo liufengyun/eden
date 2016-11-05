@@ -175,9 +175,10 @@ class UntpdSuite extends EdenSuite {
   syntactic("a match { case x: c.type => }")
   syntactic("a match { case x: M[(A, B)] => }")
   syntactic("a match { case x: ((A, B) => C) => }")
-  // syntactic("a match { case x: (A | B) => }")
-  // syntactic("a match { case x: A & B => }")
-  // syntactic("a match { case x: A @x @y => }")
+  syntactic("a match { case x: A | B => }")
+  syntactic("a match { case x: (A & B) => }")
+  syntactic("a match { case x: M[A | B] => false }")
+  syntactic("a match { case x: M[A & B] => true }")
   syntactic("""x match { case q"A($a)" => a } """)
   syntactic("x match { case http.`*`(q) => q }")
 

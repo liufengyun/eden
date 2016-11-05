@@ -342,7 +342,7 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
 
   object PatInfixExtract {
     def unapply(tree: InfixOp): Option[(Tree, TermName, List[Tree])] = {
-      if (loc != PatLoc) return None
+      if (mode != TermMode || loc != PatLoc) return None
 
       val args = tree.right match {
         case Tuple(args) => args

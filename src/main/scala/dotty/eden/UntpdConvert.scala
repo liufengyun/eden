@@ -424,15 +424,15 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       val mtret = tret.toMTree[m.Pat.Type]
       m.Pat.Type.Function(mtparams, mtret)
 
-    // case u.PatTypeOr(lhs, rhs) =>
-    //   val mlhs = lhs.toMTree[m.Pat.Type]
-    //   val mrhs = rhs.toMTree[m.Pat.Type]
-    //   m.Pat.Type.Or(mlhs, mrhs)
+    case u.PatTypeOr(lhs, rhs) =>
+      val mlhs = lhs.toMTree[m.Pat.Type]
+      val mrhs = rhs.toMTree[m.Pat.Type]
+      m.Pat.Type.Or(mlhs, mrhs)
 
-    // case u.PatTypeAnd(lhs, rhs) =>
-    //   val mlhs = lhs.toMTree[m.Pat.Type]
-    //   val mrhs = rhs.toMTree[m.Pat.Type]
-    //   m.Pat.Type.And(mlhs, mrhs)
+    case u.PatTypeAnd(lhs, rhs) =>
+      val mlhs = lhs.toMTree[m.Pat.Type]
+      val mrhs = rhs.toMTree[m.Pat.Type]
+      m.Pat.Type.And(mlhs, mrhs)
 
     case u.PatTypeTuple(tpts) =>
       val mtypes = tpts.map(toMTree[m.Pat.Type])
