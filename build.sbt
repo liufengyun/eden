@@ -5,7 +5,7 @@ lazy val edenSetting = Seq(
   scalaVersion := "2.11.8",
 
   libraryDependencies += "ch.epfl.lamp"  %% "dotty"     % "0.1-20161026-557d448-NIGHTLY",
-  libraryDependencies += "org.scalameta" %% "scalameta" % "1.2.0",
+  libraryDependencies += "org.scalameta" %% "scalameta" % "1.3.0.522",
   libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.0" % "test",
 
   credentials += Credentials(Path.userHome / ".sbt" / ".credentials"),
@@ -53,7 +53,7 @@ lazy val macrosSetting = Seq(
     url("https://dl.bintray.com/scalameta/maven")
   )(Resolver.ivyStylePatterns),
 
-  libraryDependencies += "org.scalameta" %% "scalameta" % "1.2.0",
+  libraryDependencies += "org.scalameta" %% "scalameta" % "1.3.0.522",
   addCompilerPlugin("org.scalameta" % "paradise_2.11.8" % "3.0.0.100")
 )
 

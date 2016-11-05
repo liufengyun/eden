@@ -266,7 +266,7 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       val mbody = u.withs(TermMode, ExprLoc) { fun.body.toMTree[m.Term] }
       m.Term.Function(margs, mbody)
 
-    case u.Interpolate(id, lits, args) =>
+    case u.TermInterpolate(id, lits, args) =>
       val margs = u.withs(TermMode, ExprLoc) { args.map(toMTree[m.Term]) }
       m.Term.Interpolate(m.Term.Name(id.show), lits.map(m.Lit(_)), margs)
 
@@ -290,13 +290,9 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       m.Type.Arg.ByName(mtpt)
 
     case t: d.RefinedTypeTree =>
-      def flatten(t: d.Tree): List[m.Type] = t match { // flatten and type
-        case t: d.AndTypeTree => flatten(t.left) ++ flatten(t.right)
-        case t => List(t.toMTree[m.Type])
-      }
-      val mtpt = flatten(t.tpt)
+      val mtpt = Some(t.tpt.toMTree[m.Type])
       val mrefinements = t.refinements.map(toMTree[m.Stat])
-      m.Type.Compound(mtpt, mrefinements)
+      m.Type.Refine(mtpt, mrefinements)
 
     case u.TypeSelect(pre, name) =>
       val mpre = u.withs(TermMode, ExprLoc) { pre.toMTree[m.Term.Ref] }
@@ -396,6 +392,10 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
         m.Lit(())
       else
         m.Pat.Tuple(mtrees)
+
+    case u.PatInterpolate(id, lits, args) =>
+      val margs = u.withs(TermMode, PatLoc) { args.map(toMTree[m.Pat]) }
+      m.Pat.Interpolate(m.Term.Name(id.show), lits.map(m.Lit(_)), margs)
 
     // pat types
 

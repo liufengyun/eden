@@ -177,6 +177,8 @@ class UntpdSuite extends EdenSuite {
   // checkUntpd("a match { case x: (A | B) => }")
   // checkUntpd("a match { case x: A & B => }")
   // checkUntpd("a match { case x: A @x @y => }")
+  checkUntpd("""x match { case q"A($a)" => a } """)
+  checkUntpd("x match { case http.`*`(q) => q }")
 
   // definitions
   checkUntpd("val a = 3")
@@ -186,6 +188,7 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("val a, b: Int")
   checkUntpd("val a, b = 3")
   checkUntpd("val Some(Some(x)) = a")
+  checkUntpd("""val q"object $name { ..$stats }" = q"object Test { println(1024) }"""")
 
   checkUntpd("var a = 3")
   checkUntpd("var a: List[Int] = List(3)")

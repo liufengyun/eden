@@ -198,8 +198,9 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
     }
   }
 
-  object Interpolate {
+  object TermInterpolate {
     def unapply(s: InterpolatedString): Option[(TermName, List[String], List[Tree])] = {
+      if (mode != TermMode || loc != ExprLoc) return None
       val segs = s.segments.flatMap { seg =>
         if (seg.isInstanceOf[Thicket])
           seg.asInstanceOf[Thicket].trees
@@ -447,6 +448,23 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
 
       // concatenate if predicate with return predicate harms readability
       bound.lo.isEmpty && bound.hi.isEmpty
+    }
+  }
+
+  object PatInterpolate {
+    def unapply(s: InterpolatedString): Option[(TermName, List[String], List[Tree])] = {
+      if (mode != TermMode || loc != PatLoc) return None
+      val segs = s.segments.flatMap { seg =>
+        if (seg.isInstanceOf[Thicket])
+          seg.asInstanceOf[Thicket].trees
+        else
+          List(seg)
+      }
+      val (lits, args) = segs.partition(seg => seg.isInstanceOf[Literal])
+      val strs: List[String] = lits.map { t =>
+        t.asInstanceOf[Literal].const.value.asInstanceOf[String]
+      }
+      Some((s.id, strs, args))
     }
   }
 
