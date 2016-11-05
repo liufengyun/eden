@@ -681,7 +681,14 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
 
   object TypeAnnot {
     def unapply(tree: Annotated): Option[(Tree, List[Tree])] = {
-      if (mode != TypeMode) return None
+      if (mode != TypeMode || loc == PatLoc) return None
+      return Some(TermAnnot.collect(tree))
+    }
+  }
+
+  object PatAnnot {
+    def unapply(tree: Annotated): Option[(Tree, List[Tree])] = {
+      if (mode != TypeMode || loc != PatLoc) return None
       return Some(TermAnnot.collect(tree))
     }
   }

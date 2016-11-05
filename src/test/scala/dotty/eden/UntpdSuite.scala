@@ -334,6 +334,9 @@ class UntpdSuite extends EdenSuite {
   checkUntpd("trait Foo[-T] extends Comparator[T @uncheckedVariance()]")
   checkUntpd("trait Foo[-T] extends Comparator[T @uncheckedVariance() @annot(4)]")
   checkUntpd("trait Function0[@specialized(Unit, Int, Double) T]")
+  checkUntpd("x match { case m: Type[Any] @unchecked => m }",
+    "x match { case m: Type[Any] @unchecked() => m }")
+  checkUntpd("x match { case m: Type[Any] @unchecked() @foo() => m }")
 
   // modifiers
   checkUntpd("private val a: Int = 3")

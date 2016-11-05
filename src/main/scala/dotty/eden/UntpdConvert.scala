@@ -628,6 +628,14 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       }
       m.Type.Annotate(marg, mannots)
 
+    case u.PatAnnot(arg, annots) =>
+      val marg = arg.toMTree[m.Pat.Type]
+      val mannots = annots.map { annot =>
+        val mannot = u.withs(TermMode, SuperCallLoc) { annot.toMTree[m.Term] }
+        m.Mod.Annot(mannot)
+      }
+      m.Pat.Type.Annotate(marg, mannots)
+
     case _ =>
       println("mode: " + u.mode)
       println("location: " + u.loc)
