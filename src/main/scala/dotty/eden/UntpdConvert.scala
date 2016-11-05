@@ -112,6 +112,7 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
 
     case u.TermIdent(name) =>
       if (name.startsWith(nme.USCORE_PARAM_PREFIX)) m.Term.Placeholder()
+      else if (name == nme.CONSTRUCTOR) m.Ctor.Name("this")
       else m.Term.Name(name.show)
 
     case u.TermSelect(pre, name) =>
@@ -498,13 +499,23 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       else
         m.Defn.Val(t.mods, mpats, mtpt, mrhs)
 
-    case t: d.DefDef if !t.rhs.isEmpty =>
+    case t: d.DefDef if !t.rhs.isEmpty && t.name != nme.CONSTRUCTOR =>
       val mname = m.Term.Name(t.name.show)
       val mtparams = u.withs(TypeMode, ParamLoc) { t.tparams.map(toMTree[m.Type.Param]) }
       val mvparams = u.withs(TermMode, ParamLoc) { t.vparamss.map(_.map(toMTree[m.Term.Param]))}
       val mtpt = if (t.tpt.isEmpty) None else Some(u.withMode(TypeMode) { t.tpt.toMTree[m.Type] })
       val mrhs = u.withs(TermMode, ExprLoc) { t.rhs.toMTree[m.Term] }
       m.Defn.Def(t.mods, mname, mtparams, mvparams, mtpt, mrhs)
+
+    case t: d.DefDef if t.name == nme.CONSTRUCTOR =>
+      val rhs = t.rhs match {
+        case t: d.Block if t.expr.show == "()" => t.stats.head
+        case _ => t.rhs
+      }
+
+      val mvparams = u.withs(TermMode, ParamLoc) { t.vparamss.map(_.map(toMTree[m.Term.Param]))}
+      val mrhs = u.withs(TermMode, ExprLoc) { rhs.toMTree[m.Term] }
+      m.Ctor.Secondary(t.mods, m.Ctor.Name("this"), mvparams, mrhs)
 
     case u.ParamTerm(modifiers, name, tpt, default) =>
       val mname = if (name == nme.WILDCARD) m.Name.Anonymous() else m.Term.Name(name.show)

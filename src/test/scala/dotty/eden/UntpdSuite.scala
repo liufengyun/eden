@@ -255,7 +255,8 @@ class UntpdSuite extends EdenSuite {
   syntactic("class A[T <: C[T]](a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; val x: Int }")
   syntactic("class A[T <: C[T]](a: Int) extends B(a) with C[T] { def test(x: Int): Boolean; var x: Int = _ }")
   syntactic("object A extends B with C { def test(x: Int): Boolean; val x: Int }")
-  syntactic("class Y(x: Int) { def this() = this()(1) }")
+  syntactic("class Y(x: Int) { def this() = this(1) }")
+  syntactic("class Y(x: Int) { private def this() = this()(1) }")
 
   // functions
   syntactic("map(_ + 1)")
@@ -344,15 +345,15 @@ class UntpdSuite extends EdenSuite {
 
   // other features
   // - TypeLambdaTree
-  // - secondary constructors
+
 
   // scala tour code snipeets
-  // syntactic("""
-  //   abstract class Buffer {
-  //     type T
-  //     val element: T
-  //   }
-  // """)
+  syntactic("""
+    abstract class Buffer {
+      type T
+      val element: T
+    }
+  """)
 
   syntactic("""
     class Graph {
