@@ -188,8 +188,10 @@ class UntpdSuite extends EdenSuite {
   syntactic("val a: Int")
   syntactic("val a, b: Int")
   syntactic("val a, b = 3")
+  syntactic("val a, _ = 3")
   syntactic("val Some(Some(x)) = a")
   syntactic("""val q"object $name { ..$stats }" = q"object Test { println(1024) }"""")
+  syntactic("val sched = new B with T { def x = 2 }")
 
   syntactic("var a = 3")
   syntactic("var a: List[Int] = List(3)")
@@ -255,23 +257,6 @@ class UntpdSuite extends EdenSuite {
   syntactic("object A extends B with C { def test(x: Int): Boolean; val x: Int }")
   syntactic("class Y(x: Int) { def this() = this()(1) }")
 
-  syntactic("""
-    class Graph {
-      class Node {
-        var connectedNodes: List[Node] = Nil
-        def connectTo(node: Node) =
-          if (connectedNodes.find(node.equals).isEmpty)
-            connectedNodes = node :: connectedNodes
-      }
-      var nodes: List[Node] = Nil
-      def newNode: Node = {
-        val res = new Node
-        nodes = res :: nodes
-        res
-      }
-    }
-  """)
-
   // functions
   syntactic("map(_ + 1)")
   syntactic("f(_ * _)")
@@ -326,6 +311,8 @@ class UntpdSuite extends EdenSuite {
   syntactic("@static val a: m.A = ???", "@static() val a: m.A = ???")
   syntactic("@static() val a: m.A = ???")
   syntactic("@static() @volatile() val a: m.A = ???")
+  syntactic("@foo val Foo(a) = 2", "@foo() val Foo(a) = 2")
+  syntactic("@foo val Foo(a, Bar(b)) = 2", "@foo() val Foo(a, Bar(b)) = 2")
   syntactic("@main class App { println(100) }", "@main() class App { println(100) }")
   syntactic("@main() class App { println(100) }")
   syntactic("@optimize(5) def fact(n: Int) = ???")
@@ -366,4 +353,21 @@ class UntpdSuite extends EdenSuite {
   //     val element: T
   //   }
   // """)
+
+  syntactic("""
+    class Graph {
+      class Node {
+        var connectedNodes: List[Node] = Nil
+        def connectTo(node: Node) =
+          if (connectedNodes.find(node.equals).isEmpty)
+            connectedNodes = node :: connectedNodes
+      }
+      var nodes: List[Node] = Nil
+      def newNode: Node = {
+        val res = new Node
+        nodes = res :: nodes
+        res
+      }
+    }
+  """)
 }
