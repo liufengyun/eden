@@ -2,10 +2,12 @@ lazy val metaVersion = "1.3.0.522"
 lazy val dottyVersion = "0.1.1-SNAPSHOT"
 
 lazy val common = Seq(
-  resolvers += Resolver.url(
-    "scalameta-bintray",
-    url("https://dl.bintray.com/scalameta/maven")
-  )(Resolver.ivyStylePatterns)
+  resolvers ++= Seq(Resolver.url(
+      "scalameta-bintray",
+      url("https://dl.bintray.com/scalameta/maven")
+    )(Resolver.ivyStylePatterns),
+    "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+  )
 )
 
 lazy val edenSetting = Seq(
@@ -61,11 +63,6 @@ lazy val macrosSetting = Seq(
   scalaVersion := "2.11.8",
 
   scalacOptions := Seq("-Xprint:parser,typer"),
-
-  resolvers += Resolver.url(
-    "scalameta-bintray",
-    url("https://dl.bintray.com/scalameta/maven")
-  )(Resolver.ivyStylePatterns),
 
   libraryDependencies += "org.scalameta" %% "scalameta" % metaVersion,
   addCompilerPlugin("org.scalameta" % "paradise_2.11.8" % "3.0.0.100")
