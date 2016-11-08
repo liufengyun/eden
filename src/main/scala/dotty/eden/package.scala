@@ -3,6 +3,8 @@ package dotty
 import scala.{meta => m}
 import dotty.tools.dotc.ast.{tpd, untpd}
 import dotty.tools.dotc.core.Contexts.Context
+import dotty.tools.dotc.util.SourceFile
+import dotty.tools.dotc.parsing.Parsers.Parser
 
 package object eden {
   // outer context of an AST
@@ -23,5 +25,17 @@ package object eden {
   }
 
   implicit def toMetaTyped(tree: tpd.Tree)(implicit ctx: Context): m.Tree = ???
+
+  // meta placeholder
+  // def meta(arg: Any): Stat = ???
+
+  def expand(module: AnyRef, impl: java.lang.reflect.Method, args: List[untpd.Tree], ctx: Context): untpd.Tree = {
+    val margs = args.map(arg => if (arg != null) toMetaUntyped(arg)(ctx) else null)
+    val metaResult = impl.invoke(module, margs.asInstanceOf[List[AnyRef]].toArray: _*).asInstanceOf[m.Tree]
+
+    val parser = new Parser(new SourceFile("<meta>", metaResult.syntax.toArray))(ctx)
+    val (_, stats) = parser.templateStatSeq()
+    stats match { case List(stat) => stat; case stats => untpd.Thicket(stats) }
+  }
 }
 

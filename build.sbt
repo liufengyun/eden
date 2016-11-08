@@ -1,5 +1,5 @@
 lazy val metaVersion = "1.3.0.522"
-lazy val dottyVersion = "0.1-SNAPSHOT"
+lazy val dottyVersion = "0.1.1-SNAPSHOT"
 
 lazy val common = Seq(
   resolvers += Resolver.url(
@@ -10,13 +10,15 @@ lazy val common = Seq(
 
 lazy val edenSetting = Seq(
   name := "eden",
-  version := "0.1",
+  version := "0.1.1",
   organization := "me.fengy",
   scalaVersion := "2.11.8",
 
-  libraryDependencies += "ch.epfl.lamp"  %% "dotty"     % "0.1-20161026-557d448-NIGHTLY",
-  libraryDependencies += "org.scalameta" %% "scalameta" % metaVersion,
-  libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.0" % "test",
+  libraryDependencies ++= Seq(
+    "org.scalameta" %% "scalameta" % metaVersion,
+    "org.scalatest" %% "scalatest" % "3.0.0" % "test",
+    "me.fengy" % "dotty_2.11" % dottyVersion
+  ),
 
   credentials += Credentials(Path.userHome / ".sbt" / ".credentials"),
 
@@ -58,13 +60,19 @@ lazy val macrosSetting = Seq(
   version := "0.1",
   scalaVersion := "2.11.8",
 
+  scalacOptions := Seq("-Xprint:parser,typer"),
+
+  resolvers += Resolver.url(
+    "scalameta-bintray",
+    url("https://dl.bintray.com/scalameta/maven")
+  )(Resolver.ivyStylePatterns),
+
   libraryDependencies += "org.scalameta" %% "scalameta" % metaVersion,
   addCompilerPlugin("org.scalameta" % "paradise_2.11.8" % "3.0.0.100")
 ) ++ common
 
-
 lazy val usageSetting = Seq(
-  scalacOptions := Seq("-Xprint:parser,posttyper"),
+  scalacOptions := Seq("-Xprint:parser,frontend"),
 
   // Dotty version
   scalaVersion := dottyVersion,
@@ -101,4 +109,4 @@ lazy val macros = (project in file("macros")).
 
 lazy val usage = (project in file("usage")).
   settings(usageSetting: _*).
-  dependsOn(macros)
+  dependsOn(eden, macros)
