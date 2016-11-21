@@ -33,7 +33,11 @@ package object eden {
     val margs = args.map(arg => if (arg != null) toMetaUntyped(arg)(ctx) else null)
     val metaResult = impl.invoke(module, margs.asInstanceOf[List[AnyRef]].toArray: _*).asInstanceOf[m.Tree]
 
-    val parser = new Parser(new SourceFile("<meta>", metaResult.syntax.toArray))(ctx)
+    parse(metaResult.syntax)(ctx)
+  }
+
+  def parse(code: String)(implicit ctx: Context): untpd.Tree = {
+    val parser = new Parser(new SourceFile("<meta>", code.toArray))
     val (_, stats) = parser.templateStatSeq()
     stats match { case List(stat) => stat; case stats => untpd.Thicket(stats) }
   }
