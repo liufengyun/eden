@@ -41,5 +41,106 @@ package object eden {
     val (_, stats) = parser.templateStatSeq()
     stats match { case List(stat) => stat; case stats => untpd.Thicket(stats) }
   }
+
+
+  // place holder for quasiquotes
+  implicit class StringInterpolators(val sc: StringContext) {
+
+    object q {
+      def apply(args: Any*): m.Tree = ???
+
+      def unapply(scrutinee: Any): Any = ???
+    }
+
+    object arg {
+      def apply(args: Any*): m.Tree = ???
+
+      def unapply(scrutinee: Any): Any = ???
+    }
+
+    object param {
+      def apply(args: Any*): m.Tree = ???
+
+      def unapply(scrutinee: Any): Any = ???
+    }
+
+    object t {
+      def apply(args: Any*): m.Tree = ???
+
+      def unapply(scrutinee: Any): Any = ???
+    }
+
+    object targ {
+      def apply(args: Any*): m.Tree = ???
+
+      def unapply(scrutinee: Any): Any = ???
+    }
+
+    object tparam {
+      def apply(args: Any*): m.Tree = ???
+
+      def unapply(scrutinee: Any): Any = ???
+    }
+
+    object p {
+      def apply(args: Any*): m.Tree = ???
+
+      def unapply(scrutinee: Any): Any = ???
+    }
+
+    object parg {
+      def apply(args: Any*): m.Tree = ???
+
+      def unapply(scrutinee: Any): Any = ???
+    }
+
+    object pt {
+      def apply(args: Any*): m.Tree = ???
+
+      def unapply(scrutinee: Any): Any = ???
+    }
+
+    object ctor {
+      def apply(args: Any*): m.Tree = ???
+
+      def unapply(scrutinee: Any): Any = ???
+    }
+
+    object template {
+      def apply(args: Any*): m.Tree = ???
+
+      def unapply(scrutinee: Any): Any = ???
+    }
+
+    object mod {
+      def apply(args: Any*): m.Tree = ???
+
+      def unapply(scrutinee: Any): Any = ???
+    }
+
+    object enumerator {
+      def apply(args: Any*): m.Tree = ???
+
+      def unapply(scrutinee: Any): Any = ???
+    }
+
+    object importer {
+      def apply(args: Any*): m.Tree = ???
+
+      def unapply(scrutinee: Any): Any = ???
+    }
+
+    object importee {
+      def apply(args: Any*): m.Tree = ???
+
+      def unapply(scrutinee: Any): Any = ???
+    }
+
+    object source {
+      def apply(args: Any*): m.Tree = ???
+
+      def unapply(scrutinee: Any): Any = ???
+    }
+  }
 }
 
