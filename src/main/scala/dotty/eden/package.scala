@@ -1,10 +1,16 @@
 package dotty
 
 import scala.{meta => m}
-import dotty.tools.dotc.ast.{tpd, untpd}
-import dotty.tools.dotc.core.Contexts.Context
-import dotty.tools.dotc.util.SourceFile
-import dotty.tools.dotc.parsing.Parsers.Parser
+import dotty.tools.dotc._
+import ast.Trees._
+import ast.{tpd, untpd}
+import ast.untpd.modsDeco
+import core.Contexts.Context
+import util.SourceFile
+import parsing.Parsers.Parser
+import core.Symbols._
+import core.SymDenotations._
+import core.Decorators
 
 package object eden {
   // outer context of an AST
@@ -29,11 +35,34 @@ package object eden {
   // meta placeholder
   // def meta(arg: Any): Stat = ???
 
-  def expand(module: AnyRef, impl: java.lang.reflect.Method, args: List[untpd.Tree], ctx: Context): untpd.Tree = {
-    val margs = args.map(arg => if (arg != null) toMetaUntyped(arg)(ctx) else null)
-    val metaResult = impl.invoke(module, margs.asInstanceOf[List[AnyRef]].toArray: _*).asInstanceOf[m.Tree]
+  /** Expand annotation macros */
+  def expandAnnot(mdef: untpd.MemberDef)(implicit ctx: Context): untpd.Tree = {
+    val ann = mdef.mods.annotations.filter(isAnnotMacros).headOption
+    val expansion = ann.flatMap {
+      case ann@Apply(Select(New(tpt), init), Nil) => // TODO: support constant params
+        val classpath = ctx.platform.classPath.asURLs.toArray
+        val classloader = new java.net.URLClassLoader(classpath, getClass.getClassLoader)
+        // reflect macros definition
+        val moduleClass = classloader.loadClass(tpt.show + "$inline$") // TODO: fully-qualified name
+        val module = moduleClass.getField("MODULE$").get(null)
+        val impl = moduleClass.getDeclaredMethods().find(_.getName == "apply").get
+        impl.setAccessible(true)
+        val callback = (margs: List[AnyRef]) => impl.invoke(module, margs: _*)
 
-    parse(metaResult.syntax)(ctx)
+        val prefix = null
+        val expandee = {
+          val mods1 = mdef.mods.withAnnotations(mdef.mods.annotations.filter(_ ne ann))
+          mdef.withMods(mods1)
+        }
+        val mtree = toMetaUntyped(expandee)
+        val mResult = impl.invoke(module, prefix, mtree).asInstanceOf[m.Tree]
+        val result = parse(mResult.syntax)(ctx)
+        Some(result)
+      case _ =>
+        None
+    }
+
+    expansion.getOrElse(mdef)
   }
 
   def parse(code: String)(implicit ctx: Context): untpd.Tree = {
@@ -42,105 +71,18 @@ package object eden {
     stats match { case List(stat) => stat; case stats => untpd.Thicket(stats) }
   }
 
+  def isQuasiquote(symbol: Symbol)(implicit ctx: Context): Boolean = {
+    symbol.enclosingPackageClass.showFullName == "scala.meta.quasiquotes"
+  }
 
-  // place holder for quasiquotes
-  implicit class StringInterpolators(val sc: StringContext) {
+  /** An annotation is macros iff it extends `scala.annotation.MacrosAnnotation` */
+  def isAnnotMacros(ann: untpd.Tree)(implicit ctx: Context): Boolean = {
+    import Decorators._
+    val symbol = ctx.typer.typedAheadAnnotation(ann)
+    if (!symbol.exists) return false
 
-    object q {
-      def apply(args: Any*): m.Tree = ???
-
-      def unapply(scrutinee: Any): Any = ???
-    }
-
-    object arg {
-      def apply(args: Any*): m.Tree = ???
-
-      def unapply(scrutinee: Any): Any = ???
-    }
-
-    object param {
-      def apply(args: Any*): m.Tree = ???
-
-      def unapply(scrutinee: Any): Any = ???
-    }
-
-    object t {
-      def apply(args: Any*): m.Tree = ???
-
-      def unapply(scrutinee: Any): Any = ???
-    }
-
-    object targ {
-      def apply(args: Any*): m.Tree = ???
-
-      def unapply(scrutinee: Any): Any = ???
-    }
-
-    object tparam {
-      def apply(args: Any*): m.Tree = ???
-
-      def unapply(scrutinee: Any): Any = ???
-    }
-
-    object p {
-      def apply(args: Any*): m.Tree = ???
-
-      def unapply(scrutinee: Any): Any = ???
-    }
-
-    object parg {
-      def apply(args: Any*): m.Tree = ???
-
-      def unapply(scrutinee: Any): Any = ???
-    }
-
-    object pt {
-      def apply(args: Any*): m.Tree = ???
-
-      def unapply(scrutinee: Any): Any = ???
-    }
-
-    object ctor {
-      def apply(args: Any*): m.Tree = ???
-
-      def unapply(scrutinee: Any): Any = ???
-    }
-
-    object template {
-      def apply(args: Any*): m.Tree = ???
-
-      def unapply(scrutinee: Any): Any = ???
-    }
-
-    object mod {
-      def apply(args: Any*): m.Tree = ???
-
-      def unapply(scrutinee: Any): Any = ???
-    }
-
-    object enumerator {
-      def apply(args: Any*): m.Tree = ???
-
-      def unapply(scrutinee: Any): Any = ???
-    }
-
-    object importer {
-      def apply(args: Any*): m.Tree = ???
-
-      def unapply(scrutinee: Any): Any = ???
-    }
-
-    object importee {
-      def apply(args: Any*): m.Tree = ???
-
-      def unapply(scrutinee: Any): Any = ???
-    }
-
-    object source {
-      def apply(args: Any*): m.Tree = ???
-
-      def unapply(scrutinee: Any): Any = ???
-    }
+    val macrosAnnotType = ctx.requiredClassRef("scala.annotation.MacrosAnnotation")
+    symbol.typeRef <:< macrosAnnotType
   }
 }
 

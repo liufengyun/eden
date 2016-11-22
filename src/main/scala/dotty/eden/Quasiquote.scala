@@ -77,6 +77,9 @@ object Quasiquote {
   )
 
   def apply(tree: Tree)(implicit ctx: Context): Tree = {
+    println("-------------")
+    println(tree)
+    println("-------------")
     val (tag, code) = reifyInput(tree)
     val parser = instantiateParser(parserMap(tag))
     val mTree = parser(m.inputs.Input.String(code), quasiquoteTermDialect)
