@@ -89,7 +89,7 @@ object Quasiquote {
     println("<------------")
     println("mTree:" + mTree.structure)
     println("------------->")
-    val res = parse(mTree.structure)
+    val res = quote(mTree)
     // reifySkeleton(mTree)
     println("<------------")
     println("res:" + res)
