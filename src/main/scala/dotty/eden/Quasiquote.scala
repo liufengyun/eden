@@ -77,14 +77,25 @@ object Quasiquote {
   )
 
   def apply(tree: Tree)(implicit ctx: Context): Tree = {
-    println("-------------")
+    println("<-------------")
     println(tree)
-    println("-------------")
+    println("------------->")
     val (tag, code) = reifyInput(tree)
+    println("<------------")
+    println("quoted:" + code)
+    println("------------->")
     val parser = instantiateParser(parserMap(tag))
     val mTree = parser(m.inputs.Input.String(code), quasiquoteTermDialect)
-    parse(mTree.syntax)
+    println("<------------")
+    println("mTree:" + mTree.structure)
+    println("------------->")
+    val res = parse(mTree.structure)
     // reifySkeleton(mTree)
+    println("<------------")
+    println("res:" + res)
+    println("------------->")
+
+    res
   }
 
   def unapply(tree: Tree)(implicit ctx: Context): Tree = {
@@ -143,12 +154,18 @@ object Quasiquote {
    */
 
   private def reifyInput(tree: Tree): (QuoteLabel, String) = tree match {
-    case Apply(Select(Apply(Select(Ident(StringContextName), ApplyName), List(Typed(SeqLiteral(parts, _), _))), name), args) =>
+    case Apply(Select(Apply(Ident(StringContextName) , parts), name), args) =>
       val quoted = resugar(parts.asInstanceOf[List[Literal]], args.asInstanceOf[List[Ident]].map(_.name))
       (name.toString, quoted)
     case UnApply(Select(Select(Apply(Select(Ident(StringContextName), ApplyName), List(Typed(SeqLiteral(parts, _), _))), name), UnApplyName), _, pats) =>
       val quoted = resugar(parts.asInstanceOf[List[Literal]], parts.asInstanceOf[List[Bind]].map(_.name))
       (name.toString, quoted)
+  }
+
+  def isQuasiquote(symbol: Symbol, tree: Tree)(implicit ctx: Context): Boolean = {
+    symbol.exists && symbol.enclosingPackageClass.showFullName == "scala.meta.quasiquotes" &&
+      parserMap.contains(symbol.owner.name.toString.dropRight(1)) &&
+      (symbol.name.toString == "apply" || symbol.name.toString == "unapply" )
   }
 
   /** Resugar tree into string interpolation */

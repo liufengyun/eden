@@ -71,10 +71,6 @@ package object eden {
     stats match { case List(stat) => stat; case stats => untpd.Thicket(stats) }
   }
 
-  def isQuasiquote(symbol: Symbol)(implicit ctx: Context): Boolean = {
-    symbol.enclosingPackageClass.showFullName == "scala.meta.quasiquotes"
-  }
-
   /** An annotation is macros iff it extends `scala.annotation.MacrosAnnotation` */
   def isAnnotMacros(ann: untpd.Tree)(implicit ctx: Context): Boolean = {
     import Decorators._
