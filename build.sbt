@@ -1,5 +1,5 @@
 lazy val metaVersion = "1.3.0.522"
-lazy val dottyVersion = "0.1.1-SNAPSHOT"
+lazy val dottyVersion = "0.1.2-SNAPSHOT"
 
 lazy val common = Seq(
   resolvers ++= Seq(Resolver.url(
@@ -58,18 +58,10 @@ lazy val edenSetting = Seq(
 ) ++ common
 
 lazy val macrosSetting = Seq(
-  name := "macros",
-  version := "0.1",
-  scalaVersion := "2.11.8",
-
-  scalacOptions := Seq("-Xprint:parser,typer"),
-
-  libraryDependencies += "org.scalameta" %% "scalameta" % metaVersion,
-  addCompilerPlugin("org.scalameta" % "paradise_2.11.8" % "3.0.0.100")
-) ++ common
-
-lazy val usageSetting = Seq(
-  scalacOptions := Seq("-Xprint:parser,frontend"),
+  scalacOptions := {
+    val edenClassPath = ((classDirectory in eden) in Compile).value
+    Seq("-Xprint:all,parser", "-toolcp", edenClassPath.toString) // "-Yplain-printer"
+  },
 
   // Dotty version
   scalaVersion := dottyVersion,
@@ -98,12 +90,10 @@ lazy val usageSetting = Seq(
   scalaCompilerBridgeSource := ("ch.epfl.lamp" % "dotty-bridge" % "0.1.1-20160906-75f4400-NIGHTLY" % "component").sources()
 ) ++ common
 
+
 lazy val eden = (project in file(".")).
   settings(edenSetting: _*)
 
 lazy val macros = (project in file("macros")).
-  settings(macrosSetting: _*)
-
-lazy val usage = (project in file("usage")).
-  settings(usageSetting: _*).
-  dependsOn(eden, macros)
+  settings(macrosSetting: _*).
+  dependsOn(eden)
