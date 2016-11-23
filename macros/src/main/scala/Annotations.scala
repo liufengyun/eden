@@ -1,6 +1,6 @@
 import scala.`meta`._
 
-class main extends scala.annotation.MacrosAnnotation {
+class hello extends scala.annotation.MacrosAnnotation {
   def apply(defn: Any): Any = meta {
     /*val q"object $name { ..$stats }" = defn
     val main = q"""
@@ -8,7 +8,19 @@ class main extends scala.annotation.MacrosAnnotation {
     """
     q"object $name { $main }" */
     // val q"object $name { ..$stats }" = q"object Test { println(1024) }"
-    q"object Test { println(1024) }"
+    q"object Hello { def hello = 1024 }"
     // q"object Test { def main(args: Array[String]): Unit = println(1024) }"
+  }
+}
+
+class helloDef extends scala.annotation.MacrosAnnotation {
+  def apply(defn: Any): Any = meta {
+    q"def hello = 1024"
+  }
+}
+
+class helloVal extends scala.annotation.MacrosAnnotation {
+  def apply(defn: Any): Any = meta {
+    q"val hello = 1024"
   }
 }

@@ -1,4 +1,4 @@
-lazy val metaVersion = "1.3.0.522"
+lazy val metaVersion = "1.3.0"
 lazy val dottyVersion = "0.1.2-SNAPSHOT"
 
 lazy val common = Seq(
@@ -79,7 +79,8 @@ lazy val macrosSetting = Seq(
   resolvers += Resolver.sonatypeRepo("snapshots"),
 
   libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "3.0.0" % "test",
+    "com.novocode" % "junit-interface" % "0.11" % "test",
+
     // Dotty depends on stdlib 2.11.5, best use that too (0.1-SNAPSHOT is
     // actually 2.11.5, published under ch.epfl.lamp)
     "ch.epfl.lamp" % "scala-library_2.11" % "0.1-SNAPSHOT",
@@ -88,7 +89,10 @@ lazy val macrosSetting = Seq(
   ),
 
   // Bridge which allows REPL and compilation via dotty
-  scalaCompilerBridgeSource := ("ch.epfl.lamp" % "dotty-bridge" % "0.1.1-20160906-75f4400-NIGHTLY" % "component").sources()
+  scalaCompilerBridgeSource := ("ch.epfl.lamp" % "dotty-bridge" % "0.1.1-20160906-75f4400-NIGHTLY" % "component").sources(),
+
+  testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v")
+
 ) ++ common
 
 

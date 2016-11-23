@@ -230,7 +230,7 @@ object quote {
     case m.Defn.Var(mods, pats, tpe, rhs) =>
       select("scala.meta.Defn.Var").appliedTo(quote(mods), quote(pats), quote(tpe), quote(rhs))
     case m.Defn.Def(mods, name, tparams, paramss, tpe, body) =>
-      select("scala.meta.Defn.Defn").appliedTo(quote(mods), quote(name), quote(tparams), quote.applyss(paramss), quote(tpe), quote(body))
+      select("scala.meta.Defn.Def").appliedTo(quote(mods), quote(name), quote(tparams), quote.applyss(paramss), quote(tpe), quote(body))
     case m.Defn.Macro(mods, name, tparams, paramss, tpe, body) =>
       select("scala.meta.Defn.Macro").appliedTo(quote(mods), quote(name), quote(tparams), quote.applyss(paramss), quote(tpe), quote(body))
     case m.Defn.Type(mods, name, tparams, body) =>
