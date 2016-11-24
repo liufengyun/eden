@@ -5,6 +5,7 @@ import ast.Trees._
 import core.Contexts._
 import core.Symbols._
 import core.Decorators._
+import core.Constants._
 import core.Names._
 import util.SourceFile
 import parsing.Parsers.Parser
@@ -43,6 +44,8 @@ import scala.{meta => m}
  *       new $anon()
  *     }.unapply(<unapply-selector>) <unapply> ((name @ _), (stats @ _))
  *
+ * Credit: https://github.com/densh/joyquote
+ *
  */
 object Quasiquote {
   import ast.untpd._
@@ -76,11 +79,21 @@ object Quasiquote {
     "source"     ->    "XtensionQuasiquoteSource"
   )
 
+
+  private[eden] object Hole {
+    val pat = java.util.regex.Pattern.compile("^__placeholder(\\d+)$")
+    def apply(i: Int) = s"__placeholder$i"
+    def unapply(s: String): Option[Int] = {
+      val m = pat.matcher(s)
+      if (m.find()) Some(m.group(1).toInt) else None
+    }
+  }
+
   def apply(tree: Tree)(implicit ctx: Context): Tree = {
     println("<-------------")
     println(tree)
     println("------------->")
-    val (tag, code) = reifyInput(tree)
+    val (tag, code, args) = reifyInput(tree)
     println("<------------")
     println("quoted:" + code)
     println("------------->")
@@ -89,7 +102,7 @@ object Quasiquote {
     println("<------------")
     println("mTree:" + mTree.structure)
     println("------------->")
-    val res = quote(mTree)
+    val res = new Quote(tree, args).apply(mTree)
     // reifySkeleton(mTree)
     println("<------------")
     println("res:" + res)
@@ -99,7 +112,7 @@ object Quasiquote {
   }
 
   def unapply(tree: Tree)(implicit ctx: Context): Tree = {
-    val (tag, code) = reifyInput(tree)
+    val (tag, code, args) = reifyInput(tree)
     val parser = instantiateParser(parserMap(tag))
     val mTree = parser(m.inputs.Input.String(code), quasiquotePatDialect)
     // TODO: make tree for unapply
@@ -153,13 +166,13 @@ object Quasiquote {
    *
    */
 
-  private def reifyInput(tree: Tree): (QuoteLabel, String) = tree match {
+  private def reifyInput(tree: Tree): (QuoteLabel, String, List[Tree]) = tree match {
     case Apply(Select(Apply(Ident(StringContextName) , parts), name), args) =>
-      val quoted = resugar(parts.asInstanceOf[List[Literal]], args.asInstanceOf[List[Ident]].map(_.name))
-      (name.toString, quoted)
+      val quoted = resugar(parts.asInstanceOf[List[Literal]])
+      (name.toString, quoted, args)
     case UnApply(Select(Select(Apply(Select(Ident(StringContextName), ApplyName), List(Typed(SeqLiteral(parts, _), _))), name), UnApplyName), _, pats) =>
-      val quoted = resugar(parts.asInstanceOf[List[Literal]], parts.asInstanceOf[List[Bind]].map(_.name))
-      (name.toString, quoted)
+      val quoted = resugar(parts.asInstanceOf[List[Literal]])
+      (name.toString, quoted, pats)
   }
 
   def isQuasiquote(symbol: Symbol, tree: Tree)(implicit ctx: Context): Boolean = {
@@ -169,15 +182,10 @@ object Quasiquote {
   }
 
   /** Resugar tree into string interpolation */
-  private def resugar(parts: List[Literal], args: List[Name]): String = {
-    val pi = parts.iterator
-    val ai = args.iterator
-    val bldr = new JLSBuilder(pi.next.const.value.toString)
-    while (ai.hasNext) {
-      bldr append "$" + ai.next
-      bldr append pi.next.const.value
-    }
-    bldr.toString
+  private def resugar(parts: List[Literal]): String = {
+    parts.init.zipWithIndex.map { case (Literal(Constant(part)), i) =>
+      s"$part${Hole(i)}"
+    }.mkString("", "", parts.last.const.value.toString)
   }
 
   // TODO: handle Quasi

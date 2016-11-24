@@ -21,7 +21,7 @@ object MacrosTest {
 
   @Test def helloVal = {
     @helloVal val hello = "hello"
-    assert(hello == 1024)
+    assert(hello == 1024 + 256)
   }
 }
 

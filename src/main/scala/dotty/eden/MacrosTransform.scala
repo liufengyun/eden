@@ -73,15 +73,19 @@ class MacrosTransform extends MiniPhaseTransform { thisTransformer =>
     val mapply: DefDef = mapplyOpt.get.asInstanceOf[DefDef]
 
     // create new object in the same scope
-    val moduleName: TermName = (tree.symbol.name + "$inline").toTermName
+    val moduleName = (tree.symbol.name + "$inline").toTermName
     val moduleSym = ctx.newCompleteModuleSymbol(tree.symbol.owner, moduleName, Synthetic | ModuleVal, Synthetic | ModuleClass,
       defn.ObjectType :: Nil, Scopes.newScope, assocFile = tree.symbol.asClass.assocFile).entered
-    val metaTp = MethodType(List("prefix".toTermName), List(ctx.definitions.AnyRefType),
+    val methodTp = MethodType(List("prefix".toTermName), List(ctx.definitions.AnyRefType),
       MethodType(List("defn".toTermName), List(ctx.definitions.AnyRefType), ctx.definitions.AnyRefType))
-    val metaSym = ctx.newSymbol(moduleSym.moduleClass, "apply".toTermName, Synthetic | Method | Stable, metaTp, coord = tree.pos).entered
+    val methodSym = ctx.newSymbol(moduleSym.moduleClass, "apply".toTermName, Synthetic | Method | Stable, methodTp, coord = tree.pos).entered
     val Apply(_, rhsBody::_) = mapply.rhs
-    val metaTree = DefDef(metaSym, rhsBody)
-    val moduleTree = ModuleDef(moduleSym, List(metaTree))
+
+    // rhsBody.foreachSubTree(tree => tree.changeOwner(mapply.symbol, metaSym))
+    val updatedRhs = rhsBody.changeOwner(mapply.symbol, methodSym)
+
+    val methodTree = DefDef(methodSym, updatedRhs)
+    val moduleTree = ModuleDef(moduleSym, List(methodTree))
 
     // modify `apply` in class def
     val applyNew = cpy.DefDef(mapply)(rhs = Literal(Constant(())))
