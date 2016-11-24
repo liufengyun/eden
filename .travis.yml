@@ -5,4 +5,4 @@ jdk:
   - oraclejdk8
 script:
   - sbt test
-  - sbt "macros/test"
+  - sbt "macros/test:run"
