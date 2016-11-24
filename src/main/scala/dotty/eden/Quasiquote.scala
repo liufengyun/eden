@@ -50,8 +50,8 @@ object Quasiquote {
   type MetaParser = (m.Input, m.Dialect) => m.Tree
   type QuoteLabel = String
 
-  val quasiquoteTermDialect = m.Dialect.forName("QuasiquotePat(Dotty, Single)")
-  val quasiquotePatDialect = m.Dialect.forName("QuasiquotePat(Dotty, Single)")
+  val quasiquoteTermDialect = m.Dialect.forName("QuasiquoteTerm(Dotty, Multi)")
+  val quasiquotePatDialect = m.Dialect.forName("QuasiquotePat(Dotty, Multi)")
 
   private val StringContextName = "StringContext".toTermName
   private val ApplyName = "apply".toTermName

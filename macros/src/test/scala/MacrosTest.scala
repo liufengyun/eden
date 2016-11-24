@@ -11,12 +11,12 @@ object MacrosTest {
 
   @Test def helloObject = {
     @hello object Foo
-    assert(Hello.hello == 1024)
+    assert(Hello.hello == "hello, world!")
   }
 
   @Test def helloDef = {
     @helloDef def hello = "hello"
-    assert(hello == 1024)
+    assert(hello == "hello, world!")
   }
 
   @Test def helloVal = {

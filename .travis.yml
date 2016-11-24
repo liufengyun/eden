@@ -4,4 +4,4 @@ scala:
 jdk:
   - oraclejdk8
 script:
-  - sbt test "macros/test:run"
+  - sbt test macros/test:run
