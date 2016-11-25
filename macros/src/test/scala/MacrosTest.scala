@@ -6,6 +6,7 @@ object MacrosTest {
     helloObject
     helloDef
     helloVal
+    helloNested
     println("========= All tests pass ==========")
   }
 
@@ -22,6 +23,11 @@ object MacrosTest {
   @Test def helloVal = {
     @helloVal val hello = "hello"
     assert(hello == 1024 + 256)
+  }
+
+  @Test def helloNested = {
+    @helloNested val hello = "hello"
+    assert(hello == 1024)
   }
 }
 

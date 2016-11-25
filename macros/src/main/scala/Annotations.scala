@@ -26,3 +26,9 @@ class helloVal extends scala.annotation.MacrosAnnotation {
   }
 }
 
+class helloNested extends scala.annotation.MacrosAnnotation {
+  def apply(defn: Any): Any = meta {
+    q"""val hello = ${q"1024"}"""
+  }
+}
+

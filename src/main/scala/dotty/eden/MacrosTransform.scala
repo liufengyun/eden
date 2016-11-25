@@ -81,7 +81,6 @@ class MacrosTransform extends MiniPhaseTransform { thisTransformer =>
     val methodSym = ctx.newSymbol(moduleSym.moduleClass, "apply".toTermName, Synthetic | Method | Stable, methodTp, coord = tree.pos).entered
     val Apply(_, rhsBody::_) = mapply.rhs
 
-    // rhsBody.foreachSubTree(tree => tree.changeOwner(mapply.symbol, metaSym))
     val updatedRhs = rhsBody.changeOwner(mapply.symbol, methodSym)
 
     val methodTree = DefDef(methodSym, updatedRhs)
