@@ -1,18 +1,15 @@
 package dotty.eden
 
 import dotty.tools.dotc._
-import ast.Trees._
+import ast._
+import Trees._
 import core.Contexts._
 import core.Symbols._
 import core.Decorators._
 import core.Constants._
-import core.Names._
-import util.SourceFile
-import parsing.Parsers.Parser
 
-
-import java.lang.{ StringBuilder => JLSBuilder }
 import scala.{meta => m}
+import m.dialects.Dotty
 
 
 /** Bootstrap quasiquotes
@@ -48,7 +45,7 @@ import scala.{meta => m}
  *
  */
 object Quasiquote {
-  import ast.untpd._
+  import tpd._
 
   type MetaParser = (m.Input, m.Dialect) => m.Tree
   type QuoteLabel = String
@@ -81,15 +78,15 @@ object Quasiquote {
 
 
   private[eden] object Hole {
-    val pat = java.util.regex.Pattern.compile("^__placeholder(\\d+)$")
-    def apply(i: Int) = s"__placeholder$i"
+    val pat = java.util.regex.Pattern.compile("^placeholder(\\d+)$")
+    def apply(i: Int) = s"$$placeholder$i"
     def unapply(s: String): Option[Int] = {
       val m = pat.matcher(s)
       if (m.find()) Some(m.group(1).toInt) else None
     }
   }
 
-  def apply(tree: Tree)(implicit ctx: Context): Tree = {
+  def apply(tree: Tree)(implicit ctx: Context): untpd.Tree = {
     println("<-------------")
     println(tree)
     println("------------->")
@@ -102,7 +99,7 @@ object Quasiquote {
     println("<------------")
     println("mTree:" + mTree.structure)
     println("------------->")
-    val res = new Quote(tree, args).apply(mTree)
+    val res = new Quote(tree, args).lift(mTree)
     // reifySkeleton(mTree)
     println("<------------")
     println("res:" + res)
@@ -111,7 +108,7 @@ object Quasiquote {
     res
   }
 
-  def unapply(tree: Tree)(implicit ctx: Context): Tree = {
+  def unapply(tree: Tree)(implicit ctx: Context): untpd.Tree = {
     val (tag, code, args) = reifyInput(tree)
     val parser = instantiateParser(parserMap(tag))
     val mTree = parser(m.inputs.Input.String(code), quasiquotePatDialect)

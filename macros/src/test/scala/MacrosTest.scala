@@ -6,7 +6,10 @@ object MacrosTest {
     helloObject
     helloDef
     helloVal
+    helloTrees
     helloNested
+    helloQuasiInSeq
+    helloRank2
     println("========= All tests pass ==========")
   }
 
@@ -27,6 +30,21 @@ object MacrosTest {
 
   @Test def helloNested = {
     @helloNested val hello = "hello"
+    assert(hello == 1024)
+  }
+
+  @Test def helloTrees = {
+    @helloTrees val hello = "hello"
+    assert(hello == 1024)
+  }
+
+  @Test def helloQuasiInSeq = {
+    @helloQuasiInSeq val hello = "hello"
+    assert(hello == 1024)
+  }
+
+  @Test def helloRank2 = {
+    @helloRank2 val hello = "hello"
     assert(hello == 1024)
   }
 }

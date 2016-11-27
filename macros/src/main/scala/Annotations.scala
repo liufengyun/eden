@@ -32,3 +32,28 @@ class helloNested extends scala.annotation.MacrosAnnotation {
   }
 }
 
+class helloTrees extends scala.annotation.MacrosAnnotation {
+  def apply(defn: Any): Any = meta {
+    val tp = t"Int"
+    q"""val hello: $tp = { println(1024); 1024 }"""
+  }
+}
+
+class helloQuasiInSeq extends scala.annotation.MacrosAnnotation {
+  def apply(defn: Any): Any = meta {
+    val i1024 = q"1024"
+    val tp = t"Int"
+    q"""val hello: $tp = { println(1024); $i1024 }"""
+  }
+}
+
+class helloRank2 extends scala.annotation.MacrosAnnotation {
+  def apply(defn: Any): Any = meta {
+    val stat1 = q"println(1)"
+    val stat2 = q"1024"
+    val stats = List(stat1, stat2)
+
+    q"""val hello = {print(24); ..$stats ; 1024}"""
+  }
+}
+
