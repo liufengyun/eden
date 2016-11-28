@@ -86,7 +86,9 @@ object Quasiquote {
     }
   }
 
-  def apply(tree: Tree)(implicit ctx: Context): untpd.Tree = {
+  // TODO: problem passing Boolean values
+  def expand(tree: Tree, isTermMode: String)(implicit ctx: Context): untpd.Tree = {
+    val isTerm: Boolean = isTermMode == "true"
     println("<-------------")
     println(tree)
     println("------------->")
@@ -99,22 +101,13 @@ object Quasiquote {
     println("<------------")
     println("mTree:" + mTree.structure)
     println("------------->")
-    val res = new Quote(tree, args).lift(mTree)
+    val res = new Quote(tree, args, isTerm).lift(mTree)
     // reifySkeleton(mTree)
     println("<------------")
     println("res:" + res)
     println("------------->")
 
     res
-  }
-
-  def unapply(tree: Tree)(implicit ctx: Context): untpd.Tree = {
-    val (tag, code, args) = reifyInput(tree)
-    val parser = instantiateParser(parserMap(tag))
-    val mTree = parser(m.inputs.Input.String(code), quasiquotePatDialect)
-    // TODO: make tree for unapply
-    parse(mTree.syntax)
-    // reifySkeleton(mTree)
   }
 
   private def instantiateParser(parserName: String)(implicit ctx: Context): MetaParser = {

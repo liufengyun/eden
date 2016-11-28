@@ -47,5 +47,13 @@ object MacrosTest {
     @helloRank2 val hello = "hello"
     assert(hello == 1024)
   }
+
+  @Test def main: Unit = {
+    @main object Test {
+      "hello world!"
+    }
+
+    assert(Test.stub(null) == "hello, world!")
+  }
 }
 

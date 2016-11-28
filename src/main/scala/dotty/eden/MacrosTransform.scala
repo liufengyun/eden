@@ -71,27 +71,46 @@ class MacrosTransform extends MiniPhaseTransform { thisTransformer =>
     }
 
     val mapply: DefDef = mapplyOpt.get.asInstanceOf[DefDef]
+    val defnSymOld = mapply.vparamss(0)(0).symbol
 
     // create new object in the same scope
     val moduleName = (tree.symbol.name + "$inline").toTermName
-    val moduleSym = ctx.newCompleteModuleSymbol(tree.symbol.owner, moduleName, Synthetic | ModuleVal, Synthetic | ModuleClass,
-      defn.ObjectType :: Nil, Scopes.newScope, assocFile = tree.symbol.asClass.assocFile).entered
-    val methodTp = MethodType(List("prefix".toTermName), List(ctx.definitions.AnyRefType),
-      MethodType(List("defn".toTermName), List(ctx.definitions.AnyRefType), ctx.definitions.AnyRefType))
-    val methodSym = ctx.newSymbol(moduleSym.moduleClass, "apply".toTermName, Synthetic | Method | Stable, methodTp, coord = tree.pos).entered
-    val Apply(_, rhsBody::_) = mapply.rhs
+    val moduleSym = ctx.newCompleteModuleSymbol(
+      tree.symbol.owner, moduleName,
+      Synthetic | ModuleVal, Synthetic | ModuleClass,
+      defn.ObjectType :: Nil, Scopes.newScope,
+      assocFile = tree.symbol.asClass.assocFile).entered
 
-    val updatedRhs = rhsBody.changeOwner(mapply.symbol, methodSym)
+    def buildObject(implicit ctx: Context) = {
+      val methodTp = MethodType(List("prefix".toTermName), List(defn.AnyRefType),
+        MethodType(List("defn".toTermName), List(defn.AnyRefType), defn.AnyRefType))
 
-    val methodTree = DefDef(methodSym, updatedRhs)
-    val moduleTree = ModuleDef(moduleSym, List(methodTree))
+      val methodSym = ctx.newSymbol(moduleSym.moduleClass, "apply".toTermName,
+        Synthetic | Method | Stable, methodTp, coord = tree.pos).entered
 
-    // modify `apply` in class def
-    val applyNew = cpy.DefDef(mapply)(rhs = Literal(Constant(())))
-    val bodyNew = applyNew :: template.body.filter(_ != mapply)
-    val annotTree = cpy.TypeDef(tree)(rhs = cpy.Template(template)(body = bodyNew))
+      def buildMethod(implicit ctx: Context) = {
+        val Apply(_, rhs :: _) = mapply.rhs
+        val tree = DefDef(methodSym, rhs)
 
-    Thicket(annotTree :: moduleTree.trees)
+        val prefixSym = tree.vparamss(0)(0).symbol
+        val defnSym = tree.vparamss(1)(0).symbol
+
+        val rhs2 = rhs.changeOwner(mapply.symbol, methodSym).subst(List(defnSymOld), List(defnSym))
+        cpy.DefDef(tree)(rhs = rhs2)
+      }
+
+      val methodTree = buildMethod(ctx.withOwner(methodSym))
+      val moduleTree = ModuleDef(moduleSym, List(methodTree))
+
+      // modify `apply` in class def
+      val applyNew = cpy.DefDef(mapply)(rhs = Literal(Constant(())))
+      val bodyNew = applyNew :: template.body.filter(_ != mapply)
+      val annotTree = cpy.TypeDef(tree)(rhs = cpy.Template(template)(body = bodyNew))
+
+      Thicket(annotTree :: moduleTree.trees)
+    }
+
+    buildObject(ctx.withOwner(moduleSym))
   }
 }
 
