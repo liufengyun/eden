@@ -4,6 +4,7 @@ import dotty.tools.dotc._
 import ast._
 import core.Contexts._
 import core.Names._
+import core.StdNames._
 import core.Decorators._
 import core.Constants._
 import typer.Implicits._
@@ -78,8 +79,6 @@ class Quote(tree: untpd.Tree, args: List[tpd.Tree], isTerm: Boolean = true)(impl
 
   def liftOpt(treeOpt: Option[m.Tree]): untpd.Tree = treeOpt match {
     // TODO: quasi in opt
-    // case Some(tree: Quasi) =>
-    //  liftQuasi(tree, optional = true)
     case Some(tree) =>
       select("scala.Some").appliedTo(lift(tree))
     case None =>
@@ -88,6 +87,8 @@ class Quote(tree: untpd.Tree, args: List[tpd.Tree], isTerm: Boolean = true)(impl
 
   def liftOptSeq(treesOpt: Option[Seq[m.Tree]]): untpd.Tree = treesOpt match {
     // TODO: quasi in opt seq
+    //case Some(Seq(quasi: Quasi)) if quasi.rank > 0 =>
+    //  liftQuasi(quasi)
     case Some(trees) =>
       select("scala.Some").appliedTo(liftSeq(trees))
     case None =>
@@ -389,4 +390,53 @@ class Quote(tree: untpd.Tree, args: List[tpd.Tree], isTerm: Boolean = true)(impl
     case m.Source(stats) =>
       select("scala.meta.Source").appliedTo(liftSeq(stats))
   }).withPos(this.tree.pos)
+
+  def unquote(tree: m.Tree): untpd.Tree = {
+    if (isTerm) return lift(tree)
+
+    // patterns need more boilerplate
+    val (thenp, elsep) =
+      if (args.length == 0) (literal(true), literal(false))
+      else {
+        // val xs = args.zipWithIndex.map { case (_, i) => untpd.Ident(s"x$i".toTermName) }
+        (select("scala.Some").appliedTo(untpd.Tuple(args)), select("scala.None"))
+      }
+
+    val lifted = lift(tree)
+
+    // Note: structural types don't work in dotty.
+    // Instead of `new {}.unapply(...)`, we need `{ object A {}; A(...) }`
+    /*
+        { object A {
+            def unapply(input: scala.meta.Tree) = {
+              input match {
+                case $lifted => $thenp
+                case _       => $elsep
+              }
+            }
+          }
+          A(..$args)
+        }
+    */
+    val caseLifted = untpd.CaseDef(lifted, untpd.EmptyTree, thenp)
+    val caseOthers = untpd.CaseDef(untpd.Ident(nme.WILDCARD), untpd.EmptyTree, elsep)
+    val matchTree = untpd.Match(untpd.Ident("input".toTermName), List(caseLifted, caseOthers))
+    val unapply = untpd.DefDef(
+      "unapply".toTermName,
+      Nil,
+      List(List(untpd.ValDef("input".toTermName, select("scala.meta.Tree"), untpd.EmptyTree))),
+      untpd.TypeTree(),
+      matchTree
+    )
+    val template = untpd.Template(
+      untpd.DefDef(CONSTRUCTOR, Nil, Nil, untpd.TypeTree(), untpd.EmptyTree),
+      Nil,
+      untpd.ValDef(nme.WILDCARD, untpd.TypeTree(), untpd.EmptyTree),
+      List(unapply)
+    )
+    val extractor = untpd.ModuleDef("$extractorAnon".toTermName, template)
+    val pattern = untpd.Ident("$extractorAnon".toTermName).appliedTo(args: _*)
+    untpd.Block(extractor, pattern)
+
+  }
 }
