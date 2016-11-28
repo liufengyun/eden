@@ -55,6 +55,15 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
     res
   }
 
+  // ============ helpers ============
+  implicit class TypeDefHeler(tree: TypeDef) {
+    def tparams = tree.rhs match {
+      case d.PolyTypeTree(tparams, _) => tparams
+      case _ => Nil
+    }
+
+  }
+
   // ============ LITERALS ============
   object Literal {
     def unapply(tree: Literal): Option[Any] = tree match {
@@ -525,7 +534,9 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
       if (loc == ParamLoc) return None
 
       val tp = tree.rhs match {
-        case _: Template | _: TypeBoundsTree | EmptyTree => return None // only parse bounds
+        case _: Template | _: TypeBoundsTree | EmptyTree => return None
+        case d.PolyTypeTree(_, _: TypeBoundsTree | EmptyTree) => return None
+        case d.PolyTypeTree(_, body) => body
         case tp => tp
       }
 
@@ -585,6 +596,7 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
 
       val tp = tree.rhs match {
         case tp: TypeBoundsTree => tp
+        case d.PolyTypeTree(_, bounds: TypeBoundsTree) => bounds
         case _ => return None
       }
 
@@ -615,6 +627,7 @@ class UntpdMapping(var mode: Mode, var loc: Loc) {
           }
           (bounds, cbs)
         case bounds: TypeBoundsTree => (bounds, Nil)
+        case d.PolyTypeTree(_, bounds: TypeBoundsTree) => (bounds, Nil)
       }
 
       Some((tree.mods, tree.name, tree.tparams, bounds, ctxBounds))

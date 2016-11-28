@@ -91,10 +91,10 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
 
     // ============ TERMS ============
     case t: d.This =>
-      if (t.qual == tpnme.EMPTY)
+      if (t.qual.name == tpnme.EMPTY)
         m.Term.This(m.Name.Anonymous())
       else
-        m.Term.This(m.Name.Indeterminate(t.qual.show))
+        m.Term.This(m.Name.Indeterminate(t.qual.name.show))
 
     case t: d.Super =>
       val mmix = if (t.mix.isEmpty)
@@ -106,7 +106,7 @@ class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
       val mqual = if (qual.isEmpty)
         m.Name.Anonymous()
       else
-        m.Name.Indeterminate(qual.show)
+        m.Name.Indeterminate(qual.name.show)
 
       m.Term.Super(mqual, mmix)
 
