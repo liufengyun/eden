@@ -1,59 +1,45 @@
-import org.junit.Test
-import org.junit.Assert._
-
-object MacrosTest {
-  def main(args: Array[String]): Unit = {
-    helloObject
-    helloDef
-    helloVal
-    helloTrees
-    helloNested
-    helloQuasiInSeq
-    helloRank2
-    println("========= All tests pass ==========")
-  }
-
-  @Test def helloObject = {
+class MacrosTest extends TestSuite {
+  test("helloObject") {
     @hello object Foo
     assert(Hello.hello == "hello, world!")
   }
 
-  @Test def helloDef = {
+  test("helloDef") {
     @helloDef def hello = "hello"
     assert(hello == "hello, world!")
   }
 
-  @Test def helloVal = {
+  test("helloVal") {
     @helloVal val hello = "hello"
     assert(hello == 1024 + 256)
   }
 
-  @Test def helloNested = {
+  test("helloNested") {
     @helloNested val hello = "hello"
     assert(hello == 1024)
   }
 
-  @Test def helloTrees = {
+  test("helloTrees") {
     @helloTrees val hello = "hello"
     assert(hello == 1024)
   }
 
-  @Test def helloQuasiInSeq = {
+  test("helloQuasiInSeq") {
     @helloQuasiInSeq val hello = "hello"
     assert(hello == 1024)
   }
 
-  @Test def helloRank2 = {
+  test("helloRank2") {
     @helloRank2 val hello = "hello"
     assert(hello == 1024)
   }
 
-  @Test def main: Unit = {
+  test("main") {
     @main object Test {
       "hello world!"
     }
 
-    assert(Test.stub(null) == "hello, world!")
+    assert(Test.stub(null) == "hello world!")
   }
 }
 
