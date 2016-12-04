@@ -1,5 +1,3 @@
-import scala.collection.mutable
-
 object Driver {
   type Test = () => Unit
   type Suite = collection.mutable.HashMap[String, () => Unit]
@@ -58,3 +56,10 @@ class TestSuite {
     suite.update(name, () => code)
   }
 }
+
+object Decorators {
+  implicit class Ops(lhs: Any) extends AnyVal {
+    def ===(rhs: Any) = lhs == rhs
+  }
+}
+

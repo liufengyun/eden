@@ -1,7 +1,7 @@
-import scala.{Seq => _}
 import scala.collection.immutable.Seq
 import scala.`meta`._
 import scala.`meta`.dialects.Dotty
+import Decorators._
 
 class QuasiquoteSuite extends TestSuite {
   /* LFY
@@ -15,16 +15,16 @@ class QuasiquoteSuite extends TestSuite {
     assert(q"foo(..${List(1, 2, 3)})".show[Structure] === "Term.Apply(Term.Name(\"foo\"), Seq(Lit(1), Lit(2), Lit(3)))")
   } */
 
-  /* LFY
   test("construction ascriptions") {
     val xs = List(q"x", q"y")
-    assert(q"foo(..${xs: List[Term]})".show[Syntax] == "foo(x, y)")
+    assert(q"foo(..${xs: List[Term]})".show[Syntax] === "foo(x, y)")
     val xss = List(List(q"x", q"y"))
-    assert(q"foo(...${xss: List[List[Term]]})".show[Syntax] == "foo(x, y)")
+    assert(q"foo(...${xss: List[List[Term]]})".show[Syntax] === "foo(x, y)")
     val rhs = Some(q"x")
-    assert(q"var foo = ${rhs : Option[Term]}".show[Syntax] == "var foo = x")
+    assert(q"var foo = ${rhs : Option[Term]}".show[Syntax] === "var foo = x")
   }
 
+  /* LFY
   test("deconstruction ascriptions") {
     val q"foo(..${xs: Seq[Term.Arg]})" = q"foo(x, y)"
     assert(xs.toString === "List(x, y)")

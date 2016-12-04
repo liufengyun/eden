@@ -13,6 +13,7 @@ import core.SymDenotations._
 import core.Decorators
 
 package object eden {
+  // TODO: move to internal
   // outer context of an AST
   sealed trait Loc
   case object ExprLoc extends Loc
@@ -33,7 +34,7 @@ package object eden {
   implicit def toMetaTyped(tree: tpd.Tree)(implicit ctx: Context): m.Tree = ???
 
   // meta placeholder
-  // def meta(arg: Any): Stat = ???
+  // def meta(arg: Any): Any = ???
 
   /** Expand annotation macros */
   def expandAnnot(mdef: untpd.MemberDef)(implicit ctx: Context): untpd.Tree = {
@@ -47,7 +48,6 @@ package object eden {
         val module = moduleClass.getField("MODULE$").get(null)
         val impl = moduleClass.getDeclaredMethods().find(_.getName == "apply").get
         impl.setAccessible(true)
-        val callback = (margs: List[AnyRef]) => impl.invoke(module, margs: _*)
 
         val prefix = null
         val expandee = {

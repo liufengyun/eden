@@ -19,6 +19,8 @@ object Quote {
     def select(name: Name): untpd.Select = untpd.Select(tree, name)
 
     def appliedTo(args: untpd.Tree*): untpd.Apply = untpd.Apply(tree, args.toList)
+
+    def appliedToType(args: untpd.Tree*): untpd.TypeApply = untpd.TypeApply(tree, args.toList)
   }
 }
 
@@ -38,7 +40,7 @@ class Quote(tree: untpd.Tree, args: List[tpd.Tree], isTerm: Boolean = true)(impl
 
   def liftSeq(trees: Seq[m.Tree]): untpd.Tree =  {
     def loop(trees: List[m.Tree], acc: untpd.Tree, prefix: List[m.Tree]): untpd.Tree = trees match {
-      case (quasi: Quasi) +: rest if quasi.rank == 1 =>
+      case (quasi: Quasi) +: rest if quasi.rank > 0 =>
         if (acc.isEmpty) {
           if (prefix.isEmpty) loop(rest, liftQuasi(quasi), Nil)
           else loop(rest, prefix.foldRight(liftQuasi(quasi))((curr, acc) => {
@@ -78,7 +80,8 @@ class Quote(tree: untpd.Tree, args: List[tpd.Tree], isTerm: Boolean = true)(impl
   }
 
   def liftOpt(treeOpt: Option[m.Tree]): untpd.Tree = treeOpt match {
-    // TODO: quasi in opt
+    case Some(quasi: Quasi) =>
+      liftQuasi(quasi)
     case Some(tree) =>
       select("scala.Some").appliedTo(lift(tree))
     case None =>
@@ -95,12 +98,20 @@ class Quote(tree: untpd.Tree, args: List[tpd.Tree], isTerm: Boolean = true)(impl
       select("scala.None")
   }
 
-  def liftQuasi(quasi: Quasi): untpd.Tree = {
-    if (quasi.rank > 0) return liftQuasi(quasi.tree.asInstanceOf[Quasi])
+  def liftQuasi(quasi: Quasi, originalRank: Int = 0): untpd.Tree = {
+    if (quasi.rank > 0) return liftQuasi(quasi.tree.asInstanceOf[Quasi], quasi.rank)
 
     quasi.tree match {
-      case m.Term.Name(Quasiquote.Hole(i)) => args(i)
-      case m.Type.Name(Quasiquote.Hole(i)) => args(i)
+      case m.Term.Name(Quasiquote.Hole(i)) =>
+        if (originalRank == 2 && isTerm)
+          args(i).select("flatMap".toTermName).appliedTo(
+            select("scala.Predef.identity")
+          )
+        else args(i)
+      case m.Type.Name(Quasiquote.Hole(i)) =>
+        if (originalRank == 2 && isTerm)
+          args(i).select("flatten".toTermName).appliedTo()
+        else args(i)
     }
   }
 
