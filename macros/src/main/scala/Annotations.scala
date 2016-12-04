@@ -34,7 +34,7 @@ class helloNested extends scala.annotation.MacrosAnnotation {
 
 class helloTrees extends scala.annotation.MacrosAnnotation {
   def apply(defn: Any): Any = meta {
-    val tp = t"Int"
+    val tp = Some(t"Int") // TODO: an implicit conversion T => Option[T] in meta?
     q"""val hello: $tp = { println(1024); 1024 }"""
   }
 }
@@ -42,7 +42,7 @@ class helloTrees extends scala.annotation.MacrosAnnotation {
 class helloQuasiInSeq extends scala.annotation.MacrosAnnotation {
   def apply(defn: Any): Any = meta {
     val i1024 = q"1024"
-    val tp = t"Int"
+    val tp = Some(t"Int") // TODO: an implicit conversion T => Option[T] in meta?
     q"""val hello: $tp = { println(1024); $i1024 }"""
   }
 }
