@@ -501,13 +501,13 @@ class QuasiquoteSuite extends TestSuite {
     assert(expr.show[Structure] === "Term.Name(\"foo\")")
     assert(casez.toString === "List(case _ => foo)")
     assert(casez(0).show[Structure] === "Case(Pat.Wildcard(), None, Term.Name(\"foo\"))")
-  } */
-  /*
+  }
+
   test("2 q\"$expr match { ..case $cases }\"") {
     val q"$expr match { case bar => baz; ..case $casez; case _ => foo }" = q"foo match { case bar => baz; case _ => foo }"
     assert(expr.show[Structure] === "Term.Name(\"foo\")")
     assert(casez.isEmpty)
-  }
+  } */
 
   test("3 q\"$expr match { ..case $cases }\"") {
     val q"$expr match { ..case $casez }" = q"foo match { case bar => baz; case _ => foo }"
@@ -522,7 +522,7 @@ class QuasiquoteSuite extends TestSuite {
     val casez = List(p"case a => b", p"case q => w")
     assert(q"$expr match { ..case $casez }".show[Structure] === "Term.Match(Term.Name(\"foo\"), Seq(Case(Pat.Var.Term(Term.Name(\"a\")), None, Term.Name(\"b\")), Case(Pat.Var.Term(Term.Name(\"q\")), None, Term.Name(\"w\"))))")
   }
-
+  /*
   test("1 q\"try $expr catch { ..case $cases } finally $expropt\"") {
     val q"try $expr catch { case $case1 ..case $cases; case $case2 } finally $expropt" = q"try foo catch { case a => b; case _ => bar; case 1 => 2; case q => w} finally baz"
     assert(expr.show[Structure] === "Term.Name(\"foo\")")
@@ -541,7 +541,7 @@ class QuasiquoteSuite extends TestSuite {
     val case2 = p"case q => w"
     val expropt = q"baz"
     assert(q"try $expr catch { case $case1 ..case $cases; case $case2 } finally $expropt".show[Structure] === "Term.TryWithCases(Term.Name(\"foo\"), Seq(Case(Pat.Var.Term(Term.Name(\"a\")), None, Term.Name(\"b\")), Case(Pat.Wildcard(), None, Term.Name(\"bar\")), Case(Lit(1), None, Lit(2)), Case(Pat.Var.Term(Term.Name(\"q\")), None, Term.Name(\"w\"))), Some(Term.Name(\"baz\")))")
-  }
+  } */
 
   test("1 q\"try $expr catch $expr finally $expropt\"") {
     val q"try $expr catch $exprr finally $expropt" = q"try { foo } catch { pf } finally { bar }"
@@ -574,14 +574,14 @@ class QuasiquoteSuite extends TestSuite {
     val expr = q"42"
     assert(q"(..$paramz) => $expr".show[Structure] === "Term.Function(Seq(Term.Param(Nil, Term.Name(\"x\"), Some(Type.Name(\"Int\")), None), Term.Param(Nil, Term.Name(\"y\"), Some(Type.Name(\"String\")), None)), Lit(42))")
   }
-
+  /*
   test("1 val q\"(..$q, y: Y, $e) => $r\" = q\"(x: X, y: Y, z: Z) => 1\"") {
     val q"(..$q, y: Y, $e) => $r" = q"(x: X, y: Y, z: Z) => 1"
     assert(q.toString === "List(x: X)")
     assert(q(0).show[Structure] === "Term.Param(Nil, Term.Name(\"x\"), Some(Type.Name(\"X\")), None)")
     assert(e.show[Structure] === "Term.Param(Nil, Term.Name(\"z\"), Some(Type.Name(\"Z\")), None)")
     assert(r.show[Structure] === "Lit(1)")
-  }
+  }*/
 
   test("2 val q\"(..$q, y: Y, $e) => $r\" = q\"(x: X, y: Y, z: Z) => 1\"") {
     val q = List(param"x: X")
@@ -623,7 +623,7 @@ class QuasiquoteSuite extends TestSuite {
     val expr2 = q"bar"
     assert(q"do $expr1 while($expr2)".show[Structure] === "Term.Do(Term.Name(\"foo\"), Term.Name(\"bar\"))")
   }
-
+  /*
   test("1 q\"for (..$enumerators) $expr\"") {
     val q"for ($enum1; ..$enumerators; if $cond; $enum2) $exprr" = q"for (a <- as; x <- xs; y <- ys; if bar; b <- bs) foo(x, y)"
     assert(enumerators.toString === "List(x <- xs, y <- ys)")
@@ -633,7 +633,7 @@ class QuasiquoteSuite extends TestSuite {
     assert(enum1.show[Structure] === "Enumerator.Generator(Pat.Var.Term(Term.Name(\"a\")), Term.Name(\"as\"))")
     assert(enum2.show[Structure] === "Enumerator.Generator(Pat.Var.Term(Term.Name(\"b\")), Term.Name(\"bs\"))")
     assert(exprr.show[Structure] === "Term.Apply(Term.Name(\"foo\"), Seq(Term.Name(\"x\"), Term.Name(\"y\")))")
-  }
+  } */
 
   test("2 q\"for (..$enumerators) $expr\"") {
     val a = enumerator"a <- as"
@@ -645,14 +645,14 @@ class QuasiquoteSuite extends TestSuite {
 //  test("3 q\"for (..$enumerators) $expr\"") {
 //    val q"for (a <- as; if $cond; ..$enums) bar" = q"for (a <- as; if foo; b <- bs) bar" // TODO review after #203 resolved
 //  }
-
+  /*
   test("1 q\"for (..$enumerators) yield $expr\"") {
     val q"for (a <- as; ..$enumerators; b <- bs) yield $expr" = q"for (a <- as; x <- xs; y <- ys; b <- bs) yield foo(x, y)"
     assert(enumerators.toString === "List(x <- xs, y <- ys)")
     assert(enumerators(0).show[Structure] === "Enumerator.Generator(Pat.Var.Term(Term.Name(\"x\")), Term.Name(\"xs\"))")
     assert(enumerators(1).show[Structure] === "Enumerator.Generator(Pat.Var.Term(Term.Name(\"y\")), Term.Name(\"ys\"))")
     assert(expr.show[Structure] === "Term.Apply(Term.Name(\"foo\"), Seq(Term.Name(\"x\"), Term.Name(\"y\")))")
-  }
+  } */
 
   test("2 q\"for (..$enumerators) yield $expr\"") {
     val a = enumerator"a <- as"
@@ -665,7 +665,7 @@ class QuasiquoteSuite extends TestSuite {
     val q"new $x" = q"new Foo"
     assert(x.show[Structure] === "Template(Nil, Seq(Ctor.Ref.Name(\"Foo\")), Term.Param(Nil, Name.Anonymous(), None, None), None)")
   }
-
+  /*
   test("2 q\"new { ..$stat } with ..$exprs { $param => ..$stats }\"") {
     val q"new {..$stats; val b = 4} with $a {$selff => ..$statz}" = q"new {val a = 2; val b = 4} with A { self => val b = 3 }"
     assert(stats.toString === "List(val a = 2)")
@@ -674,7 +674,7 @@ class QuasiquoteSuite extends TestSuite {
     assert(selff.show[Structure] === "Term.Param(Nil, Term.Name(\"self\"), None, None)")
     assert(statz.toString === "List(val b = 3)")
     assert(statz(0).show[Structure] === "Defn.Val(Nil, Seq(Pat.Var.Term(Term.Name(\"b\"))), None, Lit(3))")
-  }
+  } */
 
   test("3 q\"new { ..$stat } with ..$exprs { $param => ..$stats }\"") {
     val q"new X with T { $self => def m = 42}" = q"new X with T { def m = 42 }"
@@ -835,7 +835,7 @@ class QuasiquoteSuite extends TestSuite {
     val tpes = List(t"X", t"Y")
     assert(t"(..$tpes)".show[Structure] === "Type.Tuple(Seq(Type.Name(\"X\"), Type.Name(\"Y\")))")
   }
-
+  /*
   test("1 t\"$tpe { ..$stats }\"") {
     val t"$tpe {..$stats}" = t"A with B with C { val a: A; val b: B }"
     assert(tpe.toString === "Some(A with B with C)")
@@ -849,7 +849,7 @@ class QuasiquoteSuite extends TestSuite {
     val tpe = t"X with Y"
     val stats = List(q"val a: A", q"val b: B")
     assert(t"$tpe { ..$stats }".show[Structure] === "Type.Refine(Some(Type.With(Type.Name(\"X\"), Type.Name(\"Y\"))), Seq(Decl.Val(Nil, Seq(Pat.Var.Term(Term.Name(\"a\"))), Type.Name(\"A\")), Decl.Val(Nil, Seq(Pat.Var.Term(Term.Name(\"b\"))), Type.Name(\"B\"))))")
-  }
+  } */
 
   test("1 t\"$tpe forSome { ..$stats }\"") {
     import scala.language.existentials
@@ -1099,7 +1099,7 @@ class QuasiquoteSuite extends TestSuite {
     val lit = q"1"
     assert(p"$lit".show[Structure] === "Lit(1)")
   }
-
+  /*
   test("1 p\"case $pat if $expropt => $expr\"") {
     val p"case $pat if $expropt => $expr" = p"case X if foo => bar"
     assert(pat.show[Structure] === "Term.Name(\"X\")")

@@ -272,6 +272,8 @@ class Quote(tree: untpd.Tree, args: List[tpd.Tree], isTerm: Boolean = true)(impl
       select("scala.meta.Pat.Tuple").appliedTo(liftSeq(args))
     case m.Pat.Extract(ref, targs, args) =>
       select("scala.meta.Pat.Extract").appliedTo(lift(ref), liftSeq(targs), liftSeq(args))
+    case m.Pat.ExtractInfix(lhs, op, rhs) =>
+      select("scala.meta.Pat.ExtractInfix").appliedTo(lift(lhs), lift(op), liftSeq(rhs))
     case m.Pat.Interpolate(prefix, parts, args) =>
       select("scala.meta.Pat.Interpolate").appliedTo(lift(prefix), liftSeq(parts), liftSeq(args))
     case m.Pat.Xml(parts, args) =>

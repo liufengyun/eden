@@ -61,5 +61,7 @@ object Decorators {
   implicit class Ops(lhs: Any) extends AnyVal {
     def ===(rhs: Any) = lhs == rhs
   }
+
+  implicit def convOpt[T](x: T): Option[T] = Some(x)
 }
 
