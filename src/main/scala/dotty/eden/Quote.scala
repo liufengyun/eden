@@ -9,8 +9,8 @@ import core.Decorators._
 import core.Constants._
 import typer.Implicits._
 
-
 import scala.{meta => m}
+import scala.compat.Platform.EOL
 
 object Quote {
   type Quasi = m.internal.ast.Quasi
@@ -42,15 +42,15 @@ class Quote(tree: untpd.Tree, args: List[tpd.Tree], isTerm: Boolean = true)(impl
     def loop(trees: List[m.Tree], acc: untpd.Tree, prefix: List[m.Tree]): untpd.Tree = trees match {
       case (quasi: Quasi) +: rest if quasi.rank > 0 =>
         if (acc.isEmpty) {
-          if (prefix.isEmpty) loop(rest, liftQuasi(quasi), Nil)
-          else loop(rest, prefix.foldRight(liftQuasi(quasi))((curr, acc) => {
+          if (prefix.isEmpty) loop(rest, liftQuasi(quasi)(1), Nil)
+          else loop(rest, prefix.foldRight(liftQuasi(quasi)(1))((curr, acc) => {
             val currElement = lift(curr)
             if (isTerm) acc.select("+:".toTermName).appliedTo(currElement)
             else acc.select("+:".toTermName).select("unapply".toTermName).appliedTo(currElement)
           }), Nil)
         } else {
           require(prefix.isEmpty)
-          if (isTerm) loop(rest, acc.select("++".toTermName).appliedTo(liftQuasi(quasi)), Nil)
+          if (isTerm) loop(rest, acc.select("++".toTermName).appliedTo(liftQuasi(quasi)(1)), Nil)
           else {
             ctx.error(m.internal.parsers.Messages.QuasiquoteAdjacentEllipsesInPattern(quasi.rank), tree.pos)
             untpd.EmptyTree
@@ -72,11 +72,23 @@ class Quote(tree: untpd.Tree, args: List[tpd.Tree], isTerm: Boolean = true)(impl
     loop(trees.toList, untpd.EmptyTree, Nil)
   }
 
-  def liftSeqSeq(ts: Seq[Seq[m.Tree]]): untpd.Tree = {
-    // TODO: quasi in SeqSeq
-    val list = select("scala.collection.immutable.List")
-    val args = ts.map(liftSeq)
-    list.appliedTo(args: _*)
+  def liftSeqSeq(treess: Seq[Seq[m.Tree]]): untpd.Tree = {
+    val tripleDotQuasis = treess.flatten.collect{ case quasi: Quasi if quasi.rank == 2 => quasi }
+    if (tripleDotQuasis.length == 0) {
+      val list = select("scala.collection.immutable.List")
+      val args = treess.map(liftSeq)
+      list.appliedTo(args: _*)
+    } else if (tripleDotQuasis.length == 1) {
+      if (treess.flatten.length == 1) liftQuasi(tripleDotQuasis(0))(2)
+      else {
+        ctx.error("implementation restriction: can't mix ...$ with anything else in parameter lists." +
+          EOL + "See https://github.com/scalameta/scalameta/issues/406 for details.", tree.pos)
+        untpd.EmptyTree
+      }
+    } else {
+      ctx.error(m.internal.parsers.Messages.QuasiquoteAdjacentEllipsesInPattern(2), tree.pos)
+      untpd.EmptyTree
+    }
   }
 
   def liftOpt(treeOpt: Option[m.Tree]): untpd.Tree = treeOpt match {
@@ -98,18 +110,18 @@ class Quote(tree: untpd.Tree, args: List[tpd.Tree], isTerm: Boolean = true)(impl
       select("scala.None")
   }
 
-  def liftQuasi(quasi: Quasi, originalRank: Int = 0): untpd.Tree = {
+  def liftQuasi(quasi: Quasi, originalRank: Int = 0)(implicit expectedRank: Int = 0): untpd.Tree = {
     if (quasi.rank > 0) return liftQuasi(quasi.tree.asInstanceOf[Quasi], quasi.rank)
 
     quasi.tree match {
       case m.Term.Name(Quasiquote.Hole(i)) =>
-        if (originalRank == 2 && isTerm)
+        if (originalRank == 2 && isTerm && expectedRank == 1)
           args(i).select("flatMap".toTermName).appliedTo(
             select("scala.Predef.identity")
           )
         else args(i)
       case m.Type.Name(Quasiquote.Hole(i)) =>
-        if (originalRank == 2 && isTerm)
+        if (originalRank == 2 && isTerm && expectedRank == 1)
           args(i).select("flatten".toTermName).appliedTo()
         else args(i)
     }
@@ -314,7 +326,7 @@ class Quote(tree: untpd.Tree, args: List[tpd.Tree], isTerm: Boolean = true)(impl
     case m.Decl.Var(mods, pats, tpe) =>
       select("scala.meta.Decl.Var").appliedTo(liftSeq(mods), liftSeq(pats), lift(tpe))
     case m.Decl.Def(mods, name, tparams, paramss, tpe) =>
-      select("scala.meta.Decl.Def").appliedTo(liftSeq(mods), lift(name), liftSeq(tparams), this.liftSeqSeq(paramss), lift(tpe))
+      select("scala.meta.Decl.Def").appliedTo(liftSeq(mods), lift(name), liftSeq(tparams), liftSeqSeq(paramss), lift(tpe))
     case m.Decl.Type(mods, name, tparams, bounds) =>
       select("scala.meta.Decl.Type").appliedTo(liftSeq(mods), lift(name), liftSeq(tparams), lift(bounds))
 

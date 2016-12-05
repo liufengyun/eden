@@ -42,4 +42,3 @@ class MacrosTest extends TestSuite {
     assert(Test.stub(null) == "hello world!")
   }
 }
-

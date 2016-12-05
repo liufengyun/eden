@@ -1099,7 +1099,7 @@ class QuasiquoteSuite extends TestSuite {
     val lit = q"1"
     assert(p"$lit".show[Structure] === "Lit(1)")
   }
-  /*
+
   test("1 p\"case $pat if $expropt => $expr\"") {
     val p"case $pat if $expropt => $expr" = p"case X if foo => bar"
     assert(pat.show[Structure] === "Term.Name(\"X\")")
@@ -1120,14 +1120,14 @@ class QuasiquoteSuite extends TestSuite {
     val expr = q"`bar`"
     assert(p"case $pat if $expropt => $expr".show[Structure] === "Case(Term.Name(\"X\"), Some(Term.Name(\"foo\")), Term.Name(\"bar\"))")
   }
-
+  /*
   test("p\"_*\"") {
     assert(p"case List(_*) =>".show[Structure] === "Case(Pat.Extract(Term.Name(\"List\"), Nil, Seq(Pat.Arg.SeqWildcard())), None, Term.Block(Nil))")
   }
 
   test("parg\"_*\"") {
     assert(parg"_*".show[Structure] === "Pat.Wildcard()")
-  }
+  } */
 
   test("1 p\"$pat\"") {
     val pat = p"X"
@@ -1303,14 +1303,14 @@ class QuasiquoteSuite extends TestSuite {
     val ptpes = List(pt"x", pt"y")
     assert(pt"(..$ptpes)".show[Structure] === "Pat.Type.Tuple(Seq(Pat.Var.Type(Type.Name(\"x\")), Pat.Var.Type(Type.Name(\"y\"))))")
   }
-
+  /*
   test("1 pt\"$ptpe { ..$stats }\"") {
     val pt"$ptpe { ..$stats }" = pt"x with y { val a: A }"
     assert(ptpe.toString === "Some(x with y)")
     assert(ptpe.show[Structure] === "Some(Pat.Type.With(Type.Name(\"x\"), Type.Name(\"y\")))")
     assert(stats.toString === "List(val a: A)")
     assert(stats(0).show[Structure] === "Decl.Val(Nil, Seq(Pat.Var.Term(Term.Name(\"a\"))), Type.Name(\"A\"))")
-  }
+  } */
 
   // TODO: compilation error
   // test("2 pt\"..$ptpes { ..$stats }\"") {
@@ -1492,7 +1492,7 @@ class QuasiquoteSuite extends TestSuite {
     val expropt = q"t"
     assert(q"..$mods var ..$pats: $tpeopt = $expropt".show[Structure] === "Defn.Var(Seq(Mod.Private(Name.Anonymous()), Mod.Final()), Seq(Pat.Var.Term(Term.Name(\"x\")), Pat.Var.Term(Term.Name(\"y\"))), Some(Type.Name(\"T\")), Some(Term.Name(\"t\")))")
   }
-
+  /*
   test("1 q\"..$mods def $name[..$tparams](...$paramss): $tpeopt = $expr\"") {
     val q"..$mods def $name[..$tparams](...$paramss): $tpeopt = $expr" = q"private final def m[T, W](x: X, y: Y): R = r"
     assert(mods.toString === "List(private, final)")
