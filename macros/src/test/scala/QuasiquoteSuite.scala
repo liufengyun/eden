@@ -1492,7 +1492,7 @@ class QuasiquoteSuite extends TestSuite {
     val expropt = q"t"
     assert(q"..$mods var ..$pats: $tpeopt = $expropt".show[Structure] === "Defn.Var(Seq(Mod.Private(Name.Anonymous()), Mod.Final()), Seq(Pat.Var.Term(Term.Name(\"x\")), Pat.Var.Term(Term.Name(\"y\"))), Some(Type.Name(\"T\")), Some(Term.Name(\"t\")))")
   }
-  /*
+
   test("1 q\"..$mods def $name[..$tparams](...$paramss): $tpeopt = $expr\"") {
     val q"..$mods def $name[..$tparams](...$paramss): $tpeopt = $expr" = q"private final def m[T, W](x: X, y: Y): R = r"
     assert(mods.toString === "List(private, final)")
@@ -1719,7 +1719,7 @@ class QuasiquoteSuite extends TestSuite {
      val paramss = List(List(param"x: X", param"x: Y"))
      assert(q"..$mods def this(...$paramss)".show[Structure] === "Ctor.Primary(Seq(Mod.Private(Name.Anonymous())), Ctor.Ref.Name(\"this\"), Seq(Seq(Term.Param(Nil, Term.Name(\"x\"), Some(Type.Name(\"X\")), None), Term.Param(Nil, Term.Name(\"x\"), Some(Type.Name(\"Y\")), None))))")
    }
-
+  /*
   test("1 q\"..$mods def this(...$paramss) = $expr\"") {
     val q"..$mods def this(...$paramss) = $expr" = q"private final def this(x: X, y: Y) = this(foo, bar)"
     assert(mods.toString === "List(private, final)")
@@ -1729,14 +1729,14 @@ class QuasiquoteSuite extends TestSuite {
     assert(paramss(0)(0).show[Structure] === "Term.Param(Nil, Term.Name(\"x\"), Some(Type.Name(\"X\")), None)")
     assert(paramss(0)(1).show[Structure] === "Term.Param(Nil, Term.Name(\"y\"), Some(Type.Name(\"Y\")), None)")
     assert(expr.show[Structure] === "Term.Apply(Ctor.Ref.Name(\"this\"), Seq(Term.Name(\"foo\"), Term.Name(\"bar\")))")
-  }
-
+  } */
+  /*
    test("2 q\"..$mods def this(...$paramss) = $expr\"") {
      val mods = List(mod"private", mod"final")
      val paramss = List(List(param"x: X", param"x: Y"))
      val expr = ctor"C(foo, bar)"
      assert(q"..$mods def this(...$paramss) = $expr".show[Structure] === "Ctor.Secondary(Seq(Mod.Private(Name.Anonymous()), Mod.Final()), Ctor.Ref.Name(\"this\"), Seq(Seq(Term.Param(Nil, Term.Name(\"x\"), Some(Type.Name(\"X\")), None), Term.Param(Nil, Term.Name(\"x\"), Some(Type.Name(\"Y\")), None))), Term.Apply(Ctor.Ref.Name(\"C\"), Seq(Term.Name(\"foo\"), Term.Name(\"bar\"))))")
-   }
+   } */
 
   test("1 param\"..$mods $paramname: $atpeopt = $expropt\"") {
     val param"..$mods $paramname: $atpeopt = $expropt" = param"private final x: X = 42"
@@ -1755,7 +1755,7 @@ class QuasiquoteSuite extends TestSuite {
     val expropt = q"42"
     assert(param"..$mods $paramname: $atpeopt = $expropt".show[Structure] === "Term.Param(Seq(Mod.Private(Name.Anonymous()), Mod.Final()), Term.Name(\"x\"), Some(Type.Name(\"X\")), Some(Lit(42)))")
   }
-
+  /*
   test("1 tparam\"..$mods $tparamname[..$tparams] >: $tpeopt <: $tpeopt <% ..$tpes : ..$tpes\"") {
     val tparam"..$mods $tparamname[..$tparams] >: $tpeopt1 <: $tpeopt2 <% ..$tpes1 : ..$tpes2" = tparam"+Z[Q,W] >: E <: R <% T with Y : U with I"
     assert(mods.toString === "List(+)")
@@ -1781,7 +1781,7 @@ class QuasiquoteSuite extends TestSuite {
     val tpes1 = List(t"T with Y")
     val tpes2 = List(t"U with I")
     assert(tparam"..$mods $tparamname[..$tparams] >: $tpeopt1 <: $tpeopt2 <% ..$tpes1 : ..$tpes2".show[Structure] === "Type.Param(Seq(Mod.Covariant()), Type.Name(\"Z\"), Seq(Type.Param(Nil, Type.Name(\"Q\"), Nil, Type.Bounds(None, None), Nil, Nil), Type.Param(Nil, Type.Name(\"W\"), Nil, Type.Bounds(None, None), Nil, Nil)), Type.Bounds(Some(Type.Name(\"E\")), Some(Type.Name(\"R\"))), Seq(Type.With(Type.Name(\"T\"), Type.Name(\"Y\"))), Seq(Type.With(Type.Name(\"U\"), Type.Name(\"I\"))))")
-  }
+  } */
 
   test("1 ctor\"$ctorname\"") {
     val ctor"$ctorname" = ctor"x" // TODO after #227 types should be precise (Ctor.Call)
@@ -1816,13 +1816,13 @@ class QuasiquoteSuite extends TestSuite {
     val ctorname = ctor"y"
     assert(ctor"$tpe#$ctorname".show[Structure] === "Ctor.Ref.Project(Type.Name(\"x\"), Ctor.Ref.Name(\"y\"))")
   }
-
+  /*
   test("1 ctor\"(..$tpes) => $tpe\"") {
     val ctor"(x, ..$tpes) => $tpe" = ctor"(x, y) => z" // TODO after #227 types should be precise (Ctor.Call)
     assert(tpes.toString === "List(y)")
     assert(tpes(0).show[Structure] === "Type.Name(\"y\")")
     assert(tpe.show[Structure] === "Type.Name(\"z\")")
-  }
+  } */
 
   test("2 ctor\"(..$tpes) => $tpe\"") {
     val tpes = List(t"x", t"y")
@@ -1843,14 +1843,14 @@ class QuasiquoteSuite extends TestSuite {
     val annots = List(mod"@q", mod"@w")
     assert(ctor"$ctorname ..@$annots".show[Structure] === "Term.Annotate(Ctor.Ref.Name(\"x\"), Seq(Mod.Annot(Ctor.Ref.Name(\"q\")), Mod.Annot(Ctor.Ref.Name(\"w\"))))")
   }
-
+  /*
   test("1 ctor\"$ctorref(...$aexprss)\"") {
-  val ctor"$ctorref(...$aexprss)" = ctor"x(y, z)" // TODO after #227 types should be precise (Ctor.Call)
+    val ctor"$ctorref(...$aexprss)" = ctor"x(y, z)" // TODO after #227 types should be precise (Ctor.Call)
     assert(ctorref.show[Structure] === "Ctor.Ref.Name(\"x\")")
     assert(aexprss.toString === "List(List(y, z))")
     assert(aexprss(0)(0).show[Structure] === "Term.Name(\"y\")")
     assert(aexprss(0)(1).show[Structure] === "Term.Name(\"z\")")
-  }
+  } */
 
   test("2 ctor\"$ctorref(...$aexprss)\"") {
     val ctorref = ctor"x"
@@ -1998,7 +1998,7 @@ class QuasiquoteSuite extends TestSuite {
     val expr = q"xs"
     assert(enumerator"$pat <- $expr".show[Structure] === "Enumerator.Generator(Pat.Var.Term(Term.Name(\"x\")), Term.Name(\"xs\"))")
   }
-
+  /*
   test("3 enumerator\"$pat <- $expr\"") {
     val pat = p"X"
     val expr = q"xs"
