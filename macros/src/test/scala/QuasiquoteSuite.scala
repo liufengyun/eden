@@ -33,6 +33,7 @@ class QuasiquoteSuite extends TestSuite {
     val q"var foo = ${x: Option[Term]}" = q"var foo = x"
     assert(x.toString === "Some(x)")
   }
+  */
 
   test("1 Pat.Type or Type.Name") {
     val q"1 match { case _: List[..$tpes] => }" = q"1 match { case _: List[t] => }"
@@ -70,7 +71,7 @@ class QuasiquoteSuite extends TestSuite {
     val y = p"List(1, 2, 3)"
     assert(p"case $x @ $y => ".show[Structure] === "Case(Pat.Bind(Pat.Var.Term(Term.Name(\"x\")), Pat.Extract(Term.Name(\"List\"), Nil, Seq(Lit(1), Lit(2), Lit(3)))), None, Term.Block(Nil))")
   }
-
+  /*
   test("1 q\"foo($term, ..$terms, $term)\"") {
     val q"foo($term1, ..$terms, $term2)" = q"foo(x, y, z, q)"
     assert(term1.show[Structure] === "Term.Name(\"x\")")
@@ -78,14 +79,14 @@ class QuasiquoteSuite extends TestSuite {
     assert(terms(0).show[Structure] === "Term.Name(\"y\")")
     assert(terms(1).show[Structure] === "Term.Name(\"z\")")
     assert(term2.show[Structure] === "Term.Name(\"q\")")
-  }
+  } */
 
   test("2 q\"foo($term, ..$terms, $term)\"") {
     val term = q"x"
     val terms = List(q"y", q"z")
     assert(q"foo($term, ..$terms, $term)".show[Structure] === "Term.Apply(Term.Name(\"foo\"), Seq(Term.Name(\"x\"), Term.Name(\"y\"), Term.Name(\"z\"), Term.Name(\"x\")))")
   }
-
+  /*
   test("case q\"$foo(${x: Int})\"") {
     q"foo(42)" match {
       case q"$foo(${x: Int})" =>
@@ -109,7 +110,7 @@ class QuasiquoteSuite extends TestSuite {
     assert(ys.toString === "List(2)")
     assert(ys(0).show[Structure] === "Lit(2)")
     assert(z.show[Structure] === "Lit(3)")
-  }
+  }*/
 
   test("2 q\"foo($x, ..$ys, $z, ..$ts)\"") {
     val x = q"1"
@@ -118,11 +119,11 @@ class QuasiquoteSuite extends TestSuite {
     val ts = Nil
     assert(q"foo($x, ..$ys, $z, ..$ts)".show[Structure] === "Term.Apply(Term.Name(\"foo\"), Seq(Lit(1), Lit(2), Lit(3)))")
   }
-
+  /*
   test("1 val q\"type $name[$_] = $_\"") {
     val q"type $name[$_] = $_" = q"type List[+A] = List[A]"
     assert(name.show[Structure] === "Type.Name(\"List\")")
-  }
+  }*/
 
   test("2 val q\"type $name[$a] = $b\"") {
     val q"type $name[$a] = $b" = q"type List[+A] = List[A]"
@@ -137,7 +138,7 @@ class QuasiquoteSuite extends TestSuite {
     val b = t"B"
     assert(q"type $name[$a] = $b".show[Structure] === "Defn.Type(Nil, Type.Name(\"List\"), Seq(Type.Param(Seq(Mod.Covariant()), Type.Name(\"A\"), Nil, Type.Bounds(None, None), Nil, Nil)), Type.Name(\"B\"))")
   }
-
+  /*
   test("1 val q\"def x = ${body: Int}\"") {
     val q"def x = ${body: Int}" = q"def x = 42"
     assert(body === 42)
@@ -146,7 +147,7 @@ class QuasiquoteSuite extends TestSuite {
   test("2 val q\"def x = ${body: Int}\"") {
     val body = 42
     assert(q"def x = ${body: Int}".show[Structure] === "Defn.Def(Nil, Term.Name(\"x\"), Nil, Nil, None, Lit(42))")
-  }
+  }*/
 
   test("1 q\"$qname.this.$id\"") {
     val q"$qname.this.$x" = q"SuccessSuite.this.x"
@@ -359,7 +360,7 @@ class QuasiquoteSuite extends TestSuite {
     val w = q"d"
     assert(q"$x.$y = $z.$w".show[Structure] === "Term.Assign(Term.Select(Term.Name(\"a\"), Term.Name(\"b\")), Term.Select(Term.Name(\"c\"), Term.Name(\"d\")))")
   }
-
+  /*
   test("q\"1 $expr(...$aexprs) = $expr\"") {
     val q"$expr1(...$aexprs) = $expr2" = q"foo(a, b) = bar"
     assert(expr1.show[Structure] === "Term.Name(\"foo\")")
@@ -367,7 +368,7 @@ class QuasiquoteSuite extends TestSuite {
     assert(aexprs(0)(0).show[Structure] === "Term.Name(\"a\")")
     assert(aexprs(0)(1).show[Structure] === "Term.Name(\"b\")")
     assert(expr2.show[Structure] === "Term.Name(\"bar\")")
-  }
+  }*/
 
   test("2 q\"$expr(...$aexprs) = $expr\"") {
     val expr1 = q"foo"
@@ -429,7 +430,7 @@ class QuasiquoteSuite extends TestSuite {
     val tpe = t"Double"
     assert(q"$exp: $tpe".show[Structure] === "Term.Ascribe(Lit(1), Type.Name(\"Double\"))")
   }
-
+  /*
   test("1 q\"$expr: ..$@annots\"") {
     val q"$exprr: @q ..@$annotz @$ar" = q"foo: @q @w @e @r"
     assert(exprr.show[Structure] === "Term.Name(\"foo\")")
@@ -437,7 +438,7 @@ class QuasiquoteSuite extends TestSuite {
     assert(annotz(0).show[Structure] === "Mod.Annot(Ctor.Ref.Name(\"w\"))")
     assert(annotz(1).show[Structure] === "Mod.Annot(Ctor.Ref.Name(\"e\"))")
     assert(ar.show[Structure] === "Mod.Annot(Ctor.Ref.Name(\"r\"))")
-  }
+  } */
 
   test("2 q\"$expr: ..$@annots\"") {
     val mods = List(mod"@w", mod"@e")
@@ -467,14 +468,14 @@ class QuasiquoteSuite extends TestSuite {
     val params = List(q"x: Int", q"y: String")
     assert(q"(..$params)".show[Structure] === "Term.Tuple(Seq(Term.Ascribe(Term.Name(\"x\"), Type.Name(\"Int\")), Term.Ascribe(Term.Name(\"y\"), Type.Name(\"String\"))))")
   }
-
+  /*
   test("1 q\"{ ..$stats }\"") {
     val q"{foo; ..$statz; $astat}" = q"{foo; val a = x; val b = y; val c = z}"
     assert(statz.toString === "List(val a = x, val b = y)")
     assert(statz(0).show[Structure] === "Defn.Val(Nil, Seq(Pat.Var.Term(Term.Name(\"a\"))), None, Term.Name(\"x\"))")
     assert(statz(1).show[Structure] === "Defn.Val(Nil, Seq(Pat.Var.Term(Term.Name(\"b\"))), None, Term.Name(\"y\"))")
     assert(astat.show[Structure] === "Defn.Val(Nil, Seq(Pat.Var.Term(Term.Name(\"c\"))), None, Term.Name(\"z\"))")
-  }
+  } */
 
   test("2 q\"{ ..$stats }\"") {
     val stats = List(q"val x = 1", q"val y = 2")
@@ -494,14 +495,14 @@ class QuasiquoteSuite extends TestSuite {
     val expr3 = q"b"
     assert(q"if ($expr1) $expr2 else $expr3".show[Structure] === "Term.If(Term.ApplyInfix(Lit(1), Term.Name(\">\"), Nil, Seq(Lit(2))), Term.Name(\"a\"), Term.Name(\"b\"))")
   }
-
+  /*
   test("1 q\"$expr match { ..case $cases }\"") {
     val q"$expr match { case bar => baz; ..case $casez; case q => w}" = q"foo match { case bar => baz; case _ => foo ; case q => w }"
     assert(expr.show[Structure] === "Term.Name(\"foo\")")
     assert(casez.toString === "List(case _ => foo)")
     assert(casez(0).show[Structure] === "Case(Pat.Wildcard(), None, Term.Name(\"foo\"))")
-  }
-
+  } */
+  /*
   test("2 q\"$expr match { ..case $cases }\"") {
     val q"$expr match { case bar => baz; ..case $casez; case _ => foo }" = q"foo match { case bar => baz; case _ => foo }"
     assert(expr.show[Structure] === "Term.Name(\"foo\")")
@@ -2148,11 +2149,11 @@ class QuasiquoteSuite extends TestSuite {
     val q"class $_ { $stat }" = q"class C { def x = 42 }"
     assert(stat.show[Structure] === "Defn.Def(Nil, Term.Name(\"x\"), Nil, Nil, None, Lit(42))")
   }
-
+  /*
   test("extract Seq[T] from Option[Seq[T]]") {
     val q"class $_ { ..$stats }" = q"class C { def x = 42 }"
     assert(stats.show[Structure] === "Seq(Defn.Def(Nil, Term.Name(\"x\"), Nil, Nil, None, Lit(42)))")
-  }
+  }*/
 
   test("extract Nil from Option[Seq[T]]") {
     val q"class $_ { ..$stats }" = q"class C"
@@ -2282,5 +2283,5 @@ class QuasiquoteSuite extends TestSuite {
     assert(params.size === 2)
     assert(params.head.syntax === "b: Int")
     assert(params.tail.head.syntax === "c: Int")
-  } */
+  } // */
 }

@@ -264,6 +264,8 @@ class Quote(tree: untpd.Tree, args: List[tpd.Tree], isTerm: Boolean = true)(impl
       select("scala.meta.Pat.Var.Type").appliedTo(lift(name))
     case m.Pat.Wildcard() =>
       select("scala.meta.Pat.Wildcard").appliedTo()
+    case m.Pat.Bind(lhs, rhs) =>
+      select("scala.meta.Pat.Bind").appliedTo(lift(lhs), lift(rhs))
     case m.Pat.Alternative(lhs, rhs) =>
       select("scala.meta.Pat.Alternative").appliedTo(lift(lhs), lift(rhs))
     case m.Pat.Tuple(args) =>
@@ -340,6 +342,14 @@ class Quote(tree: untpd.Tree, args: List[tpd.Tree], isTerm: Boolean = true)(impl
       select("scala.meta.Ctor.Primary").appliedTo(liftSeq(mods), lift(name), liftSeqSeq(paramss))
     case m.Ctor.Secondary(mods, name, paramss, body) =>
       select("scala.meta.Ctor.Secondary").appliedTo(liftSeq(mods), lift(name), liftSeqSeq(paramss))
+    case m.Ctor.Ref.Name(v) =>
+      select("scala.meta.Ctor.Ref.Name").appliedTo(literal(v))
+    case m.Ctor.Ref.Select(qual, name) =>
+      select("scala.meta.Ctor.Ref.Select").appliedTo(lift(qual), lift(name))
+    case m.Ctor.Ref.Project(qual, name) =>
+      select("scala.meta.Ctor.Ref.Project").appliedTo(lift(qual), lift(name))
+    case m.Ctor.Ref.Function(name) =>
+      select("scala.meta.Ctor.Ref.Function").appliedTo(lift(name))
 
     case m.Template(early, parents, self, stats) =>
       select("scala.meta.Template").appliedTo(liftSeq(early), liftSeq(parents), lift(self), liftOptSeq(stats))
