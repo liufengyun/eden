@@ -1998,7 +1998,7 @@ class QuasiquoteSuite extends TestSuite {
     val expr = q"xs"
     assert(enumerator"$pat <- $expr".show[Structure] === "Enumerator.Generator(Pat.Var.Term(Term.Name(\"x\")), Term.Name(\"xs\"))")
   }
-  /*
+
   test("3 enumerator\"$pat <- $expr\"") {
     val pat = p"X"
     val expr = q"xs"
@@ -2103,12 +2103,12 @@ class QuasiquoteSuite extends TestSuite {
     assert(stats.toString === "List(class A { val a = 'a' })")
     assert(stats(0).show[Structure] === "Defn.Class(Nil, Type.Name(\"A\"), Nil, Ctor.Primary(Nil, Ctor.Ref.Name(\"this\"), Nil), Template(Nil, Nil, Term.Param(Nil, Name.Anonymous(), None, None), Some(Seq(Defn.Val(Nil, Seq(Pat.Var.Term(Term.Name(\"a\"))), None, Lit('a'))))))")
   }
-
+  /*
   test("2 source\"..$stats\"") {
     val source"class B { val b = 'b'}; ..$stats" = source"class B { val b = 'b'}; class A { val a = 'a'}"
     assert(stats.toString === "List(class A { val a = 'a' })")
     assert(stats(0).show[Structure] === "Defn.Class(Nil, Type.Name(\"A\"), Nil, Ctor.Primary(Nil, Ctor.Ref.Name(\"this\"), Nil), Template(Nil, Nil, Term.Param(Nil, Name.Anonymous(), None, None), Some(Seq(Defn.Val(Nil, Seq(Pat.Var.Term(Term.Name(\"a\"))), None, Lit('a'))))))")
-  }
+  } */
 
   test("3 source\"..$stats\"") {
     val stats = List(q"class A { val x = 1 }", q"object B")
@@ -2144,32 +2144,32 @@ class QuasiquoteSuite extends TestSuite {
     val stats = List(q"def x = 42")
     assert(q"class C { ..$stats }".show[Structure] === "Defn.Class(Nil, Type.Name(\"C\"), Nil, Ctor.Primary(Nil, Ctor.Ref.Name(\"this\"), Nil), Template(Nil, Nil, Term.Param(Nil, Name.Anonymous(), None, None), Some(Seq(Defn.Def(Nil, Term.Name(\"x\"), Nil, Nil, None, Lit(42))))))")
   }
-
+  /*
   test("extract T from Option[Seq[T]]") {
     val q"class $_ { $stat }" = q"class C { def x = 42 }"
     assert(stat.show[Structure] === "Defn.Def(Nil, Term.Name(\"x\"), Nil, Nil, None, Lit(42))")
-  }
+  } */
   /*
   test("extract Seq[T] from Option[Seq[T]]") {
     val q"class $_ { ..$stats }" = q"class C { def x = 42 }"
     assert(stats.show[Structure] === "Seq(Defn.Def(Nil, Term.Name(\"x\"), Nil, Nil, None, Lit(42)))")
   }*/
-
+  /*
   test("extract Nil from Option[Seq[T]]") {
     val q"class $_ { ..$stats }" = q"class C"
     assert(stats.show[Structure] === "Seq()")
-  }
+  } */
 
   test("initial support for ...") {
     val q"..$mods def $name[..$tparams](...$paramss): $tpe = $rhs" = q"def f(x: Int) = ???"
     assert(paramss.show[Structure] === "Seq(Seq(Term.Param(Nil, Term.Name(\"x\"), Some(Type.Name(\"Int\")), None)))")
     assert(q"..$mods def $name[..$tparams](...$paramss): $tpe = $rhs".show[Structure] === "Defn.Def(Nil, Term.Name(\"f\"), Nil, Seq(Seq(Term.Param(Nil, Term.Name(\"x\"), Some(Type.Name(\"Int\")), None))), None, Term.Name(\"???\"))")
   }
-
+  /*
   test("1 identity") {
     val arg"${expr: Term}" = q"x"
     assert(expr.show[Structure] === "Term.Name(\"x\")")
-  }
+  } */
 
   test("2 identity") {
     val expr = q"x"
@@ -2243,45 +2243,45 @@ class QuasiquoteSuite extends TestSuite {
     val lambda = q"($name: T) => ???"
     assert(lambda.syntax === "(x: T) => ???")
   }
-
+  /*
   test("#455 - unquote None") {
     val defnopt: Option[Stat] = None
     assert(q"..$defnopt".show[Structure] === "Term.Block(Nil)")
-  }
-
+  } */
+  /*
   test("#455 - unquote Some") {
     val defnoptSomeOption: Some[Stat] = Some(q"val x = 42")
     assert(q"..$defnoptSomeOption".show[Structure] === "Term.Block(Seq(Defn.Val(Nil, Seq(Pat.Var.Term(Term.Name(\"x\"))), None, Lit(42))))")
-  }
-
+  } */
+  /*
   test("#455 - unquote Option") {
     val defnopt: Option[Stat] = Option(q"val x = 42")
     assert(q"..$defnopt".show[Structure] === "Term.Block(Seq(Defn.Val(Nil, Seq(Pat.Var.Term(Term.Name(\"x\"))), None, Lit(42))))")
-  }
+  } */
 
   test("#468 - primary constructor") {
     val q"case class A($param)" = q"case class A(a: Int)"
     assert(param.syntax === "a: Int")
   }
-
+  /*
   test("#468 - primary constructor II") {
     val q"case class A($param, ..$params)" = q"case class A(a: Int, b: Int, c: Int)"
     assert(param.syntax === "a: Int")
     assert(params.size === 2)
     assert(params.head.syntax === "b: Int")
     assert(params.tail.head.syntax === "c: Int")
-  }
+  } */
 
   test("#468 - function parameter list") {
     val q"def foo($param): Int = a" = q"def foo(a: Int): Int = a"
     assert(param.syntax === "a: Int")
   }
-
+  /*
   test("#468 - function parameter list II") {
     val q"def foo($param, ..$params): Int = a" = q"def foo(a: Int, b: Int, c: Int): Int = a"
     assert(param.syntax === "a: Int")
     assert(params.size === 2)
     assert(params.head.syntax === "b: Int")
     assert(params.tail.head.syntax === "c: Int")
-  } // */
+  } */
 }

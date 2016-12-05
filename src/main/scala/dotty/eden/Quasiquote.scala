@@ -90,7 +90,7 @@ object Quasiquote {
   def expand(tree: Tree, isTermMode: String)(implicit ctx: Context): untpd.Tree = {
     val isTerm: Boolean = isTermMode == "true"
     println("<-------------")
-    println(tree)
+    println(tree + "@" + tree.pos.line())
     println("------------->")
     val (tag, code, args) = reifyInput(tree)
     println("<------------")
