@@ -87,7 +87,7 @@ object Quasiquote {
   }
 
   // TODO: problem passing Boolean values
-  def expand(tree: Tree, isTermMode: String)(implicit ctx: Context): untpd.Tree = {
+  def expand(tree: untpd.Tree, isTermMode: String)(implicit ctx: Context): untpd.Tree = {
     val isTerm: Boolean = isTermMode == "true"
     println("<-------------")
     println(tree + "@" + tree.pos.line())
@@ -105,6 +105,7 @@ object Quasiquote {
     // reifySkeleton(mTree)
     println("<------------")
     println("res:" + res)
+    // println("syntax:" + res.show)
     println("------------->")
 
     res
@@ -156,7 +157,7 @@ object Quasiquote {
    *
    */
 
-  private def reifyInput(tree: Tree): (QuoteLabel, String, List[Tree]) = tree match {
+  private def reifyInput(tree: untpd.Tree): (QuoteLabel, String, List[untpd.Tree]) = tree match {
     case Apply(Select(Apply(Ident(StringContextName) , parts), name), args) =>
       val quoted = resugar(parts.asInstanceOf[List[Literal]])
       (name.toString, quoted, args)

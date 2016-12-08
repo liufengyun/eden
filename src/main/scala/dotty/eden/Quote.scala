@@ -25,7 +25,7 @@ object Quote {
 }
 
 /** Lift scala.meta trees as Dotty trees */
-class Quote(tree: untpd.Tree, args: List[tpd.Tree], isTerm: Boolean = true)(implicit ctx: Context) {
+class Quote(tree: untpd.Tree, args: List[untpd.Tree], isTerm: Boolean = true)(implicit ctx: Context) {
   import Quote._
 
   val metaTreeType = ctx.requiredClassRef("scala.meta.Tree")
@@ -45,12 +45,11 @@ class Quote(tree: untpd.Tree, args: List[tpd.Tree], isTerm: Boolean = true)(impl
           if (prefix.isEmpty) loop(rest, liftQuasi(quasi)(1), Nil)
           else loop(rest, prefix.foldRight(liftQuasi(quasi)(1))((curr, acc) => {
             val currElement = lift(curr)
-            if (isTerm) acc.select("+:".toTermName).appliedTo(currElement)
-            else acc.select("+:".toTermName).select("unapply".toTermName).appliedTo(currElement)
+            untpd.InfixOp(currElement, "+:".toTermName, acc)
           }), Nil)
         } else {
           require(prefix.isEmpty)
-          if (isTerm) loop(rest, acc.select("++".toTermName).appliedTo(liftQuasi(quasi)(1)), Nil)
+          if (isTerm) loop(rest, untpd.InfixOp(acc, "++".toTermName, liftQuasi(quasi)(1)), Nil)
           else {
             ctx.error(m.internal.parsers.Messages.QuasiquoteAdjacentEllipsesInPattern(quasi.rank), tree.pos)
             untpd.EmptyTree
@@ -60,8 +59,7 @@ class Quote(tree: untpd.Tree, args: List[tpd.Tree], isTerm: Boolean = true)(impl
         if (acc.isEmpty) loop(rest, acc, prefix :+ other)
         else {
           require(prefix.isEmpty)
-          if (isTerm) loop(rest,  acc.select(":+".toTermName).appliedTo(lift(other)), Nil)
-          else loop(rest, acc.select(":+".toTermName).select("unapply".toTermName).appliedTo(lift(other)), Nil)
+          loop(rest,  untpd.InfixOp(acc, ":+".toTermName, lift(other)), Nil)
         }
       case Nil =>
         if (acc.isEmpty)
@@ -101,8 +99,9 @@ class Quote(tree: untpd.Tree, args: List[tpd.Tree], isTerm: Boolean = true)(impl
   }
 
   def liftOptSeq(treesOpt: Option[Seq[m.Tree]]): untpd.Tree = treesOpt match {
-    // TODO: quasi in opt seq
-    //case Some(Seq(quasi: Quasi)) if quasi.rank > 0 =>
+    case Some(Seq(quasi: Quasi)) if quasi.rank > 0 && !isTerm =>
+      select("scala.meta.internal.quasiquotes.Flatten").appliedTo(liftQuasi(quasi))
+    // case Some(Seq(quasi: Quasi)) if quasi.rank == 0 && !isTerm =>
     //  liftQuasi(quasi)
     case Some(trees) =>
       select("scala.Some").appliedTo(liftSeq(trees))
@@ -127,24 +126,22 @@ class Quote(tree: untpd.Tree, args: List[tpd.Tree], isTerm: Boolean = true)(impl
     }
   }
 
-  def liftImplicitly(quasi: Quasi): untpd.Tree = {
-    val arg = quasi.tree match {
-      case m.Term.Name(Quasiquote.Hole(i)) => args(i)
-      case m.Type.Name(Quasiquote.Hole(i)) => args(i)
-    }
-
+  def liftImplicitly(arg: tpd.Tree): untpd.Tree = {
     // shortcut
     if (arg.tpe <:< metaTreeType) return arg
 
-    val result = ctx.typer.inferView(arg, metaTreeType)
+    val result = ctx.typer.inferImplicitArg(arg.tpe.widen, msgFun => ctx.error(msgFun(""), arg.pos), arg.pos)
+    result appliedTo arg
 
+    /*
+    val result = ctx.typer.inferView(arg, metaTreeType)
     result match {
       case SearchSuccess(tree, ref, tstate) =>
         tree appliedTo arg
       case _ =>
         ctx.error(s"couldn't find implicit value of type Lift[${arg.tpe}]", arg.pos)
         arg
-    }
+    } // */
   }
 
   def lift(tree: m.Tree): untpd.Tree = (tree match {
@@ -355,7 +352,7 @@ class Quote(tree: untpd.Tree, args: List[tpd.Tree], isTerm: Boolean = true)(impl
     case m.Ctor.Primary(mods, name, paramss) =>
       select("scala.meta.Ctor.Primary").appliedTo(liftSeq(mods), lift(name), liftSeqSeq(paramss))
     case m.Ctor.Secondary(mods, name, paramss, body) =>
-      select("scala.meta.Ctor.Secondary").appliedTo(liftSeq(mods), lift(name), liftSeqSeq(paramss))
+      select("scala.meta.Ctor.Secondary").appliedTo(liftSeq(mods), lift(name), liftSeqSeq(paramss), lift(body))
     case m.Ctor.Ref.Name(v) =>
       select("scala.meta.Ctor.Ref.Name").appliedTo(literal(v))
     case m.Ctor.Ref.Select(qual, name) =>

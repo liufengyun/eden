@@ -59,7 +59,14 @@ class TestSuite {
 
 object Decorators {
   implicit class Ops(lhs: Any) extends AnyVal {
-    def ===(rhs: Any) = lhs == rhs
+    def ===(rhs: Any) =
+      if (lhs == rhs) true
+      else {
+        println(Console.WHITE + "lhs: " + lhs)
+        println(Console.WHITE + "rhs: " + rhs)
+        false
+      }
+
   }
 
   implicit def convOpt[T](x: T): Option[T] = Some(x)
