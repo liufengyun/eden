@@ -22,6 +22,34 @@ object Quote {
 
     def appliedToType(args: untpd.Tree*): untpd.TypeApply = untpd.TypeApply(tree, args.toList)
   }
+
+  private def select(path: String, isTerm: Boolean = true): untpd.Tree = {
+    val parts = path.split('.')
+    val name = if (isTerm) parts.last.toTermName else parts.last.toTypeName
+
+    parts.init.foldLeft[untpd.Tree](untpd.Ident("_root_".toTermName)) { (prefix, name) =>
+      prefix.select(name.toTermName)
+    }.select(name)
+  }
+
+  private def literal(value: Any): untpd.Tree = untpd.Literal(Constant(value))
+
+  // TODO: move these two methods to scala.meta
+  // seqSeqApply
+  def apply(fun: m.Term, argss: List[List[m.Term]]): m.Term = argss match {
+    case args :: rest => rest.foldLeft(m.Term.Apply(fun, args)) { (acc, args) => m.Term.Apply(acc, args) }
+    case _ => m.Term.Apply(fun, Nil)
+  }
+
+  // seqSeqUnapply
+  def unapply(call: m.Term.Apply): Option[(m.Term, Seq[Seq[m.Term.Arg]])] = {
+    def recur(acc: Seq[Seq[m.Term.Arg]], term: m.Term): (m.Term, Seq[Seq[m.Term.Arg]])  = term match {
+      case m.Term.Apply(fun, args) => recur(args +: acc, fun) // inner-most is in the front
+      case fun => (fun, acc)
+    }
+
+    Some(recur(Nil, call))
+  }
 }
 
 /** Lift scala.meta trees as Dotty trees */
@@ -30,26 +58,19 @@ class Quote(tree: untpd.Tree, args: List[untpd.Tree], isTerm: Boolean = true)(im
 
   val metaTreeType = ctx.requiredClassRef("scala.meta.Tree")
 
-  private def select(path: String): untpd.Tree = {
-    path.split('.').foldLeft[untpd.Tree](untpd.Ident("_root_".toTermName)) { (prefix, name) =>
-      prefix.select(name.toTermName)
-    }
-  }
-
-  private def literal(value: Any): untpd.Tree = untpd.Literal(Constant(value))
 
   def liftSeq(trees: Seq[m.Tree]): untpd.Tree =  {
     def loop(trees: List[m.Tree], acc: untpd.Tree, prefix: List[m.Tree]): untpd.Tree = trees match {
-      case (quasi: Quasi) +: rest if quasi.rank > 0 =>
+      case (quasi: Quasi) +: rest if quasi.rank == 1 =>
         if (acc.isEmpty) {
-          if (prefix.isEmpty) loop(rest, liftQuasi(quasi)(1), Nil)
-          else loop(rest, prefix.foldRight(liftQuasi(quasi)(1))((curr, acc) => {
+          if (prefix.isEmpty) loop(rest, liftQuasi(quasi), Nil)
+          else loop(rest, prefix.foldRight(liftQuasi(quasi))((curr, acc) => {
             val currElement = lift(curr)
             untpd.InfixOp(currElement, "+:".toTermName, acc)
           }), Nil)
         } else {
           require(prefix.isEmpty)
-          if (isTerm) loop(rest, untpd.InfixOp(acc, "++".toTermName, liftQuasi(quasi)(1)), Nil)
+          if (isTerm) loop(rest, untpd.InfixOp(acc, "++".toTermName, liftQuasi(quasi)), Nil)
           else {
             ctx.error(m.internal.parsers.Messages.QuasiquoteAdjacentEllipsesInPattern(quasi.rank), tree.pos)
             untpd.EmptyTree
@@ -67,7 +88,7 @@ class Quote(tree: untpd.Tree, args: List[untpd.Tree], isTerm: Boolean = true)(im
         else acc
     }
 
-    loop(trees.toList, untpd.EmptyTree, Nil)
+    loop (trees.toList, untpd.EmptyTree, Nil)
   }
 
   def liftSeqSeq(treess: Seq[Seq[m.Tree]]): untpd.Tree = {
@@ -77,7 +98,7 @@ class Quote(tree: untpd.Tree, args: List[untpd.Tree], isTerm: Boolean = true)(im
       val args = treess.map(liftSeq)
       list.appliedTo(args: _*)
     } else if (tripleDotQuasis.length == 1) {
-      if (treess.flatten.length == 1) liftQuasi(tripleDotQuasis(0))(2)
+      if (treess.flatten.length == 1) liftQuasi(tripleDotQuasis(0))
       else {
         ctx.error("implementation restriction: can't mix ...$ with anything else in parameter lists." +
           EOL + "See https://github.com/scalameta/scalameta/issues/406 for details.", tree.pos)
@@ -109,20 +130,12 @@ class Quote(tree: untpd.Tree, args: List[untpd.Tree], isTerm: Boolean = true)(im
       select("scala.None")
   }
 
-  def liftQuasi(quasi: Quasi, originalRank: Int = 0)(implicit expectedRank: Int = 0): untpd.Tree = {
-    if (quasi.rank > 0) return liftQuasi(quasi.tree.asInstanceOf[Quasi], quasi.rank)
+  def liftQuasi(quasi: Quasi): untpd.Tree = {
+    if (quasi.rank > 0) return liftQuasi(quasi.tree.asInstanceOf[Quasi])
 
     quasi.tree match {
-      case m.Term.Name(Quasiquote.Hole(i)) =>
-        if (originalRank == 2 && isTerm && expectedRank == 1)
-          args(i).select("flatMap".toTermName).appliedTo(
-            select("scala.Predef.identity")
-          )
-        else args(i)
-      case m.Type.Name(Quasiquote.Hole(i)) =>
-        if (originalRank == 2 && isTerm && expectedRank == 1)
-          args(i).select("flatten".toTermName).appliedTo()
-        else args(i)
+      case m.Term.Name(Quasiquote.Hole(i)) => args(i)
+      case m.Type.Name(Quasiquote.Hole(i)) => args(i)
     }
   }
 
@@ -170,7 +183,13 @@ class Quote(tree: untpd.Tree, args: List[untpd.Tree], isTerm: Boolean = true)(im
     case m.Term.Xml(parts, args) =>
       select("scala.meta.Term.Xml").appliedTo(liftSeq(parts), liftSeq(args))
     case m.Term.Apply(fun, args) =>
-      select("scala.meta.Term.Apply").appliedTo(lift(fun), liftSeq(args))
+      // magic happens here with ...$args
+      args match {
+        case Seq(quasi: Quasi) if quasi.rank == 2 =>
+          select("dotty.eden.Quote").appliedTo(lift(fun), liftQuasi(quasi))
+        case _ =>
+          select("scala.meta.Term.Apply").appliedTo(lift(fun), liftSeq(args))
+      }
     case m.Term.ApplyInfix(lhs, op, targs, args) =>
       select("scala.meta.Term.ApplyInfix").appliedTo(lift(lhs), lift(op), liftSeq(targs), liftSeq(args))
     case m.Term.ApplyType(fun, targs) =>

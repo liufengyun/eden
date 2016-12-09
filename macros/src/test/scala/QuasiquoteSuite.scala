@@ -18,13 +18,12 @@ class QuasiquoteSuite extends TestSuite {
   test("construction ascriptions") {
     val xs = List(q"x", q"y")
     assert(q"foo(..${xs: List[Term]})".show[Syntax] === "foo(x, y)")
-    val xss = List(List(q"x", q"y"))
-    assert(q"foo(...${xss: List[List[Term]]})".show[Syntax] === "foo(x, y)")
+    val xss = List(List(q"x", q"y"), List(q"y", q"z"))
+    assert(q"foo(...${xss: List[List[Term]]})".show[Syntax] === "foo(x, y)(y, z)")
     val rhs = Some(q"x")
     assert(q"var foo = ${rhs : Option[Term]}".show[Syntax] === "var foo = x")
   }
 
-  /*
   test("deconstruction ascriptions") {
     val q"foo(..${xs: Seq[Term.Arg]})" = q"foo(x, y)"
     assert(xs.toString === "List(x, y)")
@@ -32,8 +31,7 @@ class QuasiquoteSuite extends TestSuite {
     assert(xss.toString === "List(List(x, y), List(y, z))")
     val q"var foo = ${x: Option[Term]}" = q"var foo = x"
     assert(x.toString === "Some(x)")
-  } */
-
+  }
 
   test("1 Pat.Type or Type.Name") {
     val q"1 match { case _: List[..$tpes] => }" = q"1 match { case _: List[t] => }"
@@ -1840,14 +1838,14 @@ class QuasiquoteSuite extends TestSuite {
     val annots = List(mod"@q", mod"@w")
     assert(ctor"$ctorname ..@$annots".show[Structure] === "Term.Annotate(Ctor.Ref.Name(\"x\"), Seq(Mod.Annot(Ctor.Ref.Name(\"q\")), Mod.Annot(Ctor.Ref.Name(\"w\"))))")
   }
-  /*
+
   test("1 ctor\"$ctorref(...$aexprss)\"") {
     val ctor"$ctorref(...$aexprss)" = ctor"x(y, z)" // TODO after #227 types should be precise (Ctor.Call)
     assert(ctorref.show[Structure] === "Ctor.Ref.Name(\"x\")")
     assert(aexprss.toString === "List(List(y, z))")
     assert(aexprss(0)(0).show[Structure] === "Term.Name(\"y\")")
     assert(aexprss(0)(1).show[Structure] === "Term.Name(\"z\")")
-  } */
+  }
 
   test("2 ctor\"$ctorref(...$aexprss)\"") {
     val ctorref = ctor"x"
@@ -2280,5 +2278,5 @@ class QuasiquoteSuite extends TestSuite {
     assert(params.size === 2)
     assert(params.head.syntax === "b: Int")
     assert(params.tail.head.syntax === "c: Int")
-  }
+  } // */
 }
