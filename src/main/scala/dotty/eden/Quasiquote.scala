@@ -17,29 +17,10 @@ import m.dialects.Dotty
  *  1. q"class A { ... }"
  *
  *     StringContext("object ", " { ", " }").q(name, main)
- *     ~~>
- *     scala.meta.Defn.Object.apply(scala.collection.immutable.Seq.apply[Nothing](), name, scala.meta.Template.apply(scala.collection.immutable.Seq.apply[Nothing](), scala.collection.immutable.Seq.apply[Nothing](), scala.meta.Term.Param.apply(scala.collection.immutable.Seq.apply[Nothing](), scala.meta.Name.Anonymous.apply(), scala.None, scala.None), scala.Some.apply[scala.collection.immutable.Seq[meta.Defn.Def]](scala.collection.immutable.Seq.apply[meta.Defn.Def](main))))
  *
  *  2. val q"class A { ... }" = ...
  *
  *     case StringContext("object ", " { ..", " }").q((name @ _), (stats @ _))
- *     ~~>
- *     case {
- *       final class $anon extends scala.AnyRef {
- *         def <init>(): <$anon: AnyRef> = {
- *           $anon.super.<init>();
- *           ()
- *         };
- *         def unapply(input: scala.meta.Tree): Option[(scala.meta.Term.Name, scala.collection.immutable.Seq[scala.meta.Stat])] = input match {
- *           case scala.meta.Defn.Object.unapply(<unapply-selector>) <unapply> (scala.collection.immutable.Seq.unapplySeq[scala.meta.Mod](<unapply-selector>) <unapply> (), (quasiquote$macro$1$hole$0 @ _), scala.meta.Template.unapply(<unapply-selector>) <unapply> (scala.collection.immutable.Seq.unapplySeq[scala.meta.Stat](<unapply-selector>) <unapply> (), scala.collection.immutable.Seq.unapplySeq[scala.meta.Ctor.Call](<unapply-selector>) <unapply> (), scala.meta.Term.Param.unapply(<unapply-selector>) <unapply> (scala.collection.immutable.Seq.unapplySeq[scala.meta.Mod](<unapply-selector>) <unapply> (), scala.meta.Name.Anonymous.unapply(<unapply-selector>) <unapply> (), scala.None, scala.None), (quasiquote$macro$1$hole$1 @ _))) => scala.Tuple2.apply[Some[scala.meta.Term.Name], Option[scala.collection.immutable.Seq[scala.meta.Stat]]](scala.Some.apply[scala.meta.Term.Name]((quasiquote$macro$1$hole$0: scala.meta.Term.Name)), scala.meta.internal.quasiquotes.Flatten.unapply[scala.meta.Stat](quasiquote$macro$1$hole$1).flatMap[scala.collection.immutable.Seq[scala.meta.Stat]](((tree: scala.collection.immutable.Seq[scala.meta.Stat]) => scala.Some.apply[scala.collection.immutable.Seq[scala.meta.Stat]]((tree: scala.collection.immutable.Seq[scala.meta.Stat]))))) match {
- *             case (_1: Some[scala.meta.Term.Name], _2: Option[scala.collection.immutable.Seq[scala.meta.Stat]])(Some[scala.meta.Term.Name], Option[scala.collection.immutable.Seq[scala.meta.Stat]])((x: scala.meta.Term.Name)Some[scala.meta.Term.Name]((quasiquote$macro$1$result$0 @ _)), (x: scala.collection.immutable.Seq[scala.meta.Stat])Some[scala.collection.immutable.Seq[scala.meta.Stat]]((quasiquote$macro$1$result$1 @ _))) => scala.Some.apply[(scala.meta.Term.Name, scala.collection.immutable.Seq[scala.meta.Stat])](scala.Tuple2.apply[scala.meta.Term.Name, scala.collection.immutable.Seq[scala.meta.Stat]](quasiquote$macro$1$result$0, quasiquote$macro$1$result$1))
- *             case _ => scala.None
- *           }
- *           case _ => scala.None
- *         }
- *       };
- *       new $anon()
- *     }.unapply(<unapply-selector>) <unapply> ((name @ _), (stats @ _))
  *
  * Credit: https://github.com/densh/joyquote
  *
@@ -89,24 +70,23 @@ object Quasiquote {
   // TODO: problem passing Boolean values
   def expand(tree: untpd.Tree, isTermMode: String)(implicit ctx: Context): untpd.Tree = {
     val isTerm: Boolean = isTermMode == "true"
-    println("<-------------")
-    println(tree + "@" + tree.pos.line())
-    println("------------->")
+    // println("<-------------")
+    // println(tree + "@" + tree.pos.line())
+    // println("------------->")
     val (tag, code, args) = reifyInput(tree)
-    println("<------------")
-    println("quoted:" + code)
-    println("------------->")
+    // println("<------------")
+    // println("quoted:" + code)
+    // println("------------->")
     val parser = instantiateParser(parserMap(tag))
     val mTree = parser(m.inputs.Input.String(code), quasiquoteTermDialect)
-    println("<------------")
-    println("mTree:" + mTree.structure)
-    println("------------->")
+    // println("<------------")
+    // println("mTree:" + mTree.structure)
+    // println("------------->")
     val res = new Quote(tree, args, isTerm).lift(mTree)
-    // reifySkeleton(mTree)
-    println("<------------")
-    println("res:" + res)
+    // println("<------------")
+    // println("res:" + res)
     // println("syntax:" + res.show)
-    println("------------->")
+    // println("------------->")
 
     res
   }
@@ -177,10 +157,5 @@ object Quasiquote {
     parts.init.zipWithIndex.map { case (Literal(Constant(part)), i) =>
       s"$part${Hole(i)}"
     }.mkString("", "", parts.last.const.value.toString)
-  }
-
-  // TODO: handle Quasi
-  private def reifySkeleton(meta: m.Tree)(implicit ctx: Context): Tree = {
-    EmptyTree
   }
 }

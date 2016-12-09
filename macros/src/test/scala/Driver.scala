@@ -68,7 +68,5 @@ object Decorators {
       }
 
   }
-
-  implicit def convOpt[T](x: T): Option[T] = Some(x)
 }
 

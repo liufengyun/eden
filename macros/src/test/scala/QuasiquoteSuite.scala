@@ -4,16 +4,17 @@ import scala.`meta`.dialects.Dotty
 import Decorators._
 
 class QuasiquoteSuite extends TestSuite {
-  /* LFY
+
   test("rank-0 liftables") {
     assert(q"foo[${42}]".show[Structure] === "Term.ApplyType(Term.Name(\"foo\"), Seq(Lit(42)))")
-    assert(q"${42}".show[Structure] === "Lit(42)")
+    // assert(q"${42}".show[Structure] === "Lit(42)")
   }
+
 
   test("rank-1 liftables") {
     implicit def custom[U >: List[Term]]: Lift[List[Int], U] = Lift(_.map(x => q"$x".asInstanceOf[Term]))
     assert(q"foo(..${List(1, 2, 3)})".show[Structure] === "Term.Apply(Term.Name(\"foo\"), Seq(Lit(1), Lit(2), Lit(3)))")
-  } */
+  }
 
   test("construction ascriptions") {
     val xs = List(q"x", q"y")
@@ -2238,21 +2239,21 @@ class QuasiquoteSuite extends TestSuite {
     val lambda = q"($name: T) => ???"
     assert(lambda.syntax === "(x: T) => ???")
   }
-  /*
+
   test("#455 - unquote None") {
     val defnopt: Option[Stat] = None
     assert(q"..$defnopt".show[Structure] === "Term.Block(Nil)")
-  } */
-  /*
+  }
+
   test("#455 - unquote Some") {
     val defnoptSomeOption: Some[Stat] = Some(q"val x = 42")
     assert(q"..$defnoptSomeOption".show[Structure] === "Term.Block(Seq(Defn.Val(Nil, Seq(Pat.Var.Term(Term.Name(\"x\"))), None, Lit(42))))")
-  } */
-  /*
+  }
+
   test("#455 - unquote Option") {
     val defnopt: Option[Stat] = Option(q"val x = 42")
     assert(q"..$defnopt".show[Structure] === "Term.Block(Seq(Defn.Val(Nil, Seq(Pat.Var.Term(Term.Name(\"x\"))), None, Lit(42))))")
-  } */
+  }
 
   test("#468 - primary constructor") {
     val q"case class A($param)" = q"case class A(a: Int)"
@@ -2278,5 +2279,5 @@ class QuasiquoteSuite extends TestSuite {
     assert(params.size === 2)
     assert(params.head.syntax === "b: Int")
     assert(params.tail.head.syntax === "c: Int")
-  } // */
+  }
 }
