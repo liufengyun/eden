@@ -7,9 +7,8 @@ class QuasiquoteSuite extends TestSuite {
 
   test("rank-0 liftables") {
     assert(q"foo[${42}]".show[Structure] === "Term.ApplyType(Term.Name(\"foo\"), Seq(Lit(42)))")
-    // assert(q"${42}".show[Structure] === "Lit(42)")
+    assert(q"${42}".show[Structure] === "Lit(42)")
   }
-
 
   test("rank-1 liftables") {
     implicit def custom[U >: List[Term]]: Lift[List[Int], U] = Lift(_.map(x => q"$x".asInstanceOf[Term]))
