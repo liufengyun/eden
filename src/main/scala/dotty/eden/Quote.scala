@@ -11,7 +11,7 @@ import Constants._
 import typer.Implicits._
 import Types._
 import Symbols._
-import Trees.{TypeApply, Apply}
+import Trees.{Apply, TypeApply, Typed}
 
 import scala.{meta => m}
 import scala.compat.Platform.EOL
@@ -55,6 +55,29 @@ object Quote {
 
     Some(recur(Nil, call))
   }
+
+  trait Unlift[I, O] {
+    def unapply(x: I): Option[O]
+  }
+
+  object Unlift {
+    import m.Lit
+
+    def apply[I, O](pf: PartialFunction[I, O]): Unlift[I, O] = new Unlift[I, O] { def unapply(x: I): Option[O] = pf.lift(x) }
+
+    implicit def unliftBool[I >: Lit]: Unlift[I, Boolean]  = Unlift{ case Lit(x: Boolean) => x }
+    implicit def unliftByte[I >: Lit]: Unlift[I, Byte]     = Unlift{ case Lit(x: Byte) => x }
+    implicit def unliftShort[I >: Lit]: Unlift[I, Short]   = Unlift{ case Lit(x: Short) => x }
+    implicit def unliftInt[I >: Lit]: Unlift[I, Int]       = Unlift{ case Lit(x: Int) => x }
+    implicit def unliftLong[I >: Lit]: Unlift[I, Long]     = Unlift{ case Lit(x: Long) => x }
+    implicit def unliftFloat[I >: Lit]: Unlift[I, Float]   = Unlift{ case Lit(x: Float) => x }
+    implicit def unliftDouble[I >: Lit]: Unlift[I, Double] = Unlift{ case Lit(x: Double) => x }
+    implicit def unliftChar[I >: Lit]: Unlift[I, Char]     = Unlift{ case Lit(x: Char) => x }
+    implicit def unliftString[I >: Lit]: Unlift[I, String] = Unlift{ case Lit(x: String) => x }
+    implicit def unliftSymbol[I >: Lit]: Unlift[I, Symbol] = Unlift{ case Lit(x: Symbol) => x }
+    implicit def unliftNull[I >: Lit]: Unlift[I, Null]     = Unlift{ case Lit(null) => null }
+    implicit def unliftUnit[I >: Lit]: Unlift[I, Unit]     = Unlift{ case Lit(()) => () }
+  }
 }
 
 /** Lift scala.meta trees as Dotty trees */
@@ -64,8 +87,9 @@ class Quote(tree: untpd.Tree, args: List[untpd.Tree], isTerm: Boolean = true)(im
   val metaTreeType = ctx.requiredClassRef("scala.meta.Tree")
   val seqType = ctx.requiredClassRef("scala.collection.immutable.Seq")
   val optionType = ctx.requiredClassRef("scala.Option")
-  def seqTypeOf(T: Type) = seqType.appliedTo(T)
   val metaLiftType = ctx.requiredClassRef("scala.meta.quasiquotes.Lift")
+  val metaUnliftType = ctx.requiredClassRef("dotty.eden.Quote.Unlift")
+  def seqTypeOf(T: Type) = seqType.appliedTo(T)
 
 
   def liftSeq(trees: Seq[m.Tree]): untpd.Tree =  {
@@ -141,74 +165,90 @@ class Quote(tree: untpd.Tree, args: List[untpd.Tree], isTerm: Boolean = true)(im
 
   def liftQuasi(quasi: Quasi, expectedRank: Int = 0, optional: Boolean = false): untpd.Tree = {
     // credit: https://github.com/scalameta/scalameta/blob/master/scalameta/quasiquotes/src/main/scala/scala/meta/internal/quasiquotes/ReificationMacros.scala#L179
-    implicit class XtensionRankedClazz(clazz: Class[_]) {
-      def unwrap: Class[_] = {
-        if (clazz.isArray) clazz.getComponentType.unwrap
-        else clazz
-      }
-      def wrap(rank: Int): Class[_] = {
-        if (rank == 0) clazz
-        else scala.runtime.ScalaRunTime.arrayClass(clazz).wrap(rank - 1)
-      }
+    implicit class XtensionClazz(clazz: Class[_]) {
       def toTpe: Type = {
-        if (clazz.isArray) {
-          seqTypeOf(clazz.getComponentType.toTpe)
-        } else {
-          def loop(owner: Symbol, parts: List[String]): Symbol = parts match {
-            case part :: Nil =>
-              if (clazz.getName.endsWith("$")) owner.info.decl(part.toTermName).symbol
-              else owner.info.decl(part.toTypeName).symbol
-            case part :: rest =>
-              loop(owner.info.decl(part.toTermName).symbol, rest)
-            case Nil => ??? // unlikely
-          }
-
-          val name = dotty.tools.dotc.util.NameTransformer.decode(clazz.getName)
-          val result = loop(ctx.definitions.RootClass, name.stripSuffix("$").split(Array('.', '$')).toList)
-          if (result.is(Flags.ModuleVal)) result.termRef else result.typeRef
+        def loop(owner: Symbol, parts: List[String]): Symbol = parts match {
+          case part :: Nil =>
+            if (clazz.getName.endsWith("$")) owner.info.decl(part.toTermName).symbol
+            else owner.info.decl(part.toTypeName).symbol
+          case part :: rest =>
+            loop(owner.info.decl(part.toTermName).symbol, rest)
+          case Nil => ??? // unlikely
         }
+
+        val name = dotty.tools.dotc.util.NameTransformer.decode(clazz.getName)
+        val result = loop(ctx.definitions.RootClass, name.stripSuffix("$").split(Array('.', '$')).toList)
+        if (result.is(Flags.ModuleVal)) result.termRef else result.typeRef
       }
     }
 
-    implicit class XtensionRankedTree(tree: untpd.Tree) {
-      def wrap(rank: Int): untpd.Tree = {
-        if (rank == 0) tree
-        else  select("scala.collection.immutable.Seq").appliedToType(tree.wrap(rank - 1))
+    implicit class XtensionType(tpe: Type) {
+      def wrap(rank: Int): Type = {
+        if (rank == 0) tpe
+        else seqTypeOf(tpe.wrap(rank - 1))
+      }
+    }
+
+    def quasiType: Type = {
+      var inferred = quasi.pt.toTpe.wrap(expectedRank)
+      if (optional) inferred = optionType.appliedTo(inferred)
+      inferred
+    }
+
+    // type of the pattern
+    def patternType(arg: untpd.Tree): Type = {
+      arg match {
+        case Typed(_, tp) => ctx.typer.typedType(tp).tpe
+        case _ =>
+          var inferred = metaTreeType.wrap(expectedRank)
+          if (optional) inferred = optionType.appliedTo(inferred)
+          inferred
+      }
+    }
+
+    def unliftImplicitly(arg: untpd.Tree): untpd.Tree = {
+      // shortcut
+      val fromType = quasiType
+      val toType = patternType(arg)
+      if (fromType <:< toType || toType <:< fromType) return arg
+
+      val conv = ctx.typer.inferImplicitArg(
+        metaUnliftType.appliedTo(fromType, toType), msgFun => ctx.error(msgFun(""), arg.pos), arg.pos
+      )
+
+      if (conv.isEmpty) arg
+      else {
+        conv.pushAttachment(ctx.typer.TypedAhead, conv)
+        conv.appliedTo(arg)
+      }
+    }
+
+    def liftImplicitly(arg: untpd.Tree): untpd.Tree = {
+      // shortcut
+      val toType = quasiType
+      val fromType = ctx.typer.typedExpr(arg).tpe
+      if (fromType <:< toType) return arg
+
+      val conv = ctx.typer.inferImplicitArg(
+        metaLiftType.appliedTo(fromType.widen, toType), msgFun => ctx.error(msgFun(""), arg.pos), arg.pos
+      )
+
+      if (conv.isEmpty) arg
+      else {
+        conv.pushAttachment(ctx.typer.TypedAhead, conv)
+        conv.appliedTo(arg)
       }
     }
 
     if (quasi.rank > 0) return liftQuasi(quasi.tree.asInstanceOf[Quasi], quasi.rank, optional)
 
-    var inferredPt = quasi.pt.wrap(expectedRank).toTpe
-    if (optional) inferredPt = optionType.appliedTo(inferredPt)
-
     quasi.tree match {
       case m.Term.Name(Quasiquote.Hole(i)) =>
-        if (isTerm) liftImplicitly(args(i), inferredPt)
-        else unliftImplicitly(args(i), inferredPt)
+        if (isTerm) liftImplicitly(args(i))
+        else unliftImplicitly(args(i))
       case m.Type.Name(Quasiquote.Hole(i)) =>
-        if (isTerm) liftImplicitly(args(i), inferredPt)
-        else unliftImplicitly(args(i), inferredPt)
-    }
-  }
-
-  def unliftImplicitly(arg: untpd.Tree, expected: Type): untpd.Tree = {
-    arg
-  }
-
-  def liftImplicitly(arg: untpd.Tree, expected: Type): untpd.Tree = {
-    // shortcut
-    val argTyped = ctx.typer.typedExpr(arg)
-    if (argTyped.tpe <:< expected) return arg
-
-    val conv = ctx.typer.inferImplicitArg(
-      metaLiftType.appliedTo(argTyped.tpe.widen, expected), msgFun => ctx.error(msgFun(""), arg.pos), arg.pos
-    )
-
-    if (conv.isEmpty) arg
-    else {
-      conv.pushAttachment(ctx.typer.TypedAhead, conv)
-      conv.appliedTo(arg)
+        if (isTerm) liftImplicitly(args(i))
+        else unliftImplicitly(args(i))
     }
   }
 

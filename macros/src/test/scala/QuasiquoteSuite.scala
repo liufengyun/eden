@@ -85,7 +85,7 @@ class QuasiquoteSuite extends TestSuite {
     val terms = List(q"y", q"z")
     assert(q"foo($term, ..$terms, $term)".show[Structure] === "Term.Apply(Term.Name(\"foo\"), Seq(Term.Name(\"x\"), Term.Name(\"y\"), Term.Name(\"z\"), Term.Name(\"x\")))")
   }
-  /*
+
   test("case q\"$foo(${x: Int})\"") {
     q"foo(42)" match {
       case q"$foo(${x: Int})" =>
@@ -101,7 +101,7 @@ class QuasiquoteSuite extends TestSuite {
         assert(y.map(_.show[Structure]) === List("Lit(2)"))
         assert(z.show[Structure] === "Lit(3)")
     }
-  }*/
+  }
 
   test("1 q\"foo($x, ..$ys, $z)\"") {
     val q"foo($x, ..$ys, $z)" = q"foo(1, 2, 3)"
@@ -137,7 +137,7 @@ class QuasiquoteSuite extends TestSuite {
     val b = t"B"
     assert(q"type $name[$a] = $b".show[Structure] === "Defn.Type(Nil, Type.Name(\"List\"), Seq(Type.Param(Seq(Mod.Covariant()), Type.Name(\"A\"), Nil, Type.Bounds(None, None), Nil, Nil)), Type.Name(\"B\"))")
   }
-  /*
+
   test("1 val q\"def x = ${body: Int}\"") {
     val q"def x = ${body: Int}" = q"def x = 42"
     assert(body === 42)
@@ -146,7 +146,7 @@ class QuasiquoteSuite extends TestSuite {
   test("2 val q\"def x = ${body: Int}\"") {
     val body = 42
     assert(q"def x = ${body: Int}".show[Structure] === "Defn.Def(Nil, Term.Name(\"x\"), Nil, Nil, None, Lit(42))")
-  }*/
+  }
 
   test("1 q\"$qname.this.$id\"") {
     val q"$qname.this.$x" = q"SuccessSuite.this.x"
