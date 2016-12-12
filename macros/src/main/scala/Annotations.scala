@@ -1,8 +1,8 @@
-import scala.`meta`._
-import scala.`meta`.dialects.Dotty
+import scala.meta._
+import scala.meta.dialects.Dotty
 
 class main extends scala.annotation.MacrosAnnotation {
-  def apply(defn: Any): Any = meta {
+  def apply(defn: Any): Any = meta.apply {
     val q"object $name { ..$stats }" = defn
     val main = q"""
       def stub(args: Any): Any = { ..$stats }
@@ -12,7 +12,7 @@ class main extends scala.annotation.MacrosAnnotation {
 }
 
 class data extends scala.annotation.MacrosAnnotation  {
-  def apply(defn: Any): Any = meta {
+  def apply(defn: Any): Any = meta.apply {
     defn match {
       case q"class $name(..$params)" =>
         val params1 = params.map(_.copy(mods = List(mod"valparam")))

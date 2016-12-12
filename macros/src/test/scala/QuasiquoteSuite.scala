@@ -1,6 +1,6 @@
 import scala.collection.immutable.Seq
-import scala.`meta`._
-import scala.`meta`.dialects.Dotty
+import scala.meta._
+import scala.meta.dialects.Dotty
 import Decorators._
 
 class QuasiquoteSuite extends TestSuite {

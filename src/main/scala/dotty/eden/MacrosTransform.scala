@@ -3,6 +3,7 @@ package dotty.eden
 import dotty.tools.dotc._
 import core._
 import Names._
+import StdNames._
 import transform.TreeTransforms.{TransformerInfo, MiniPhaseTransform, TreeTransformer}
 import ast.Trees._
 import Flags._
@@ -44,6 +45,15 @@ class MacrosTransform extends MiniPhaseTransform { thisTransformer =>
     }
   }
 
+  var _metaSymbol: Symbol = null
+  def metaSymbol(implicit ctx: Context) = {
+    if (_metaSymbol!= null) _metaSymbol
+    else {
+      _metaSymbol = ctx.requiredModule("scala.meta.package")
+      _metaSymbol
+    }
+  }
+
   override def phaseName = "macrosTransform"
 
   override def transformTypeDef(tree: TypeDef)(implicit ctx: Context, info: TransformerInfo): Tree = {
@@ -55,7 +65,7 @@ class MacrosTransform extends MiniPhaseTransform { thisTransformer =>
     val mapplyOpt = template.body.find {
       case mdef @ DefDef(name, Nil, List(List(ValDef(_, tp1, _))), tp2, _) =>
         val rhsValid = mdef.rhs match {
-          case Apply(meta, _) => meta.symbol eq ctx.definitions.metaMethod
+          case Apply(Select(meta, nme.apply), _) => meta.symbol == metaSymbol
           case _ => false
         }
 
