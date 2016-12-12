@@ -1,11 +1,9 @@
-lazy val metaVersion = "1.3.0"
+lazy val metaVersion = "1.4.0"
 lazy val dottyVersion = "0.1.2-SNAPSHOT"
 
 lazy val common = Seq(
-  resolvers ++= Seq(Resolver.url(
-      "scalameta-bintray",
-      url("https://dl.bintray.com/scalameta/maven")
-    )(Resolver.ivyStylePatterns),
+  resolvers ++= Seq(
+    Resolver.bintrayIvyRepo("scalameta", "maven"),
     "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
   )
 )

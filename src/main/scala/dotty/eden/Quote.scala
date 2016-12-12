@@ -155,8 +155,6 @@ class Quote(tree: untpd.Tree, args: List[untpd.Tree], isTerm: Boolean = true)(im
   def liftOptSeq(treesOpt: Option[Seq[m.Tree]]): untpd.Tree = treesOpt match {
     case Some(Seq(quasi: Quasi)) if quasi.rank > 0 && !isTerm =>
       select("scala.meta.internal.quasiquotes.Flatten").appliedTo(liftQuasi(quasi))
-    // case Some(Seq(quasi: Quasi)) if quasi.rank == 0 && !isTerm =>
-    //  liftQuasi(quasi)
     case Some(trees) =>
       select("scala.Some").appliedTo(liftSeq(trees))
     case None =>

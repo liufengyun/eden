@@ -31,8 +31,8 @@ object Quasiquote {
   type MetaParser = (m.Input, m.Dialect) => m.Tree
   type QuoteLabel = String
 
+  // term dialect suffices the purpose, no need for pattern dialect
   val quasiquoteTermDialect = m.Dialect.forName("QuasiquoteTerm(Dotty, Multi)")
-  val quasiquotePatDialect = m.Dialect.forName("QuasiquotePat(Dotty, Multi)")
 
   private val StringContextName = "StringContext".toTermName
   private val ApplyName = "apply".toTermName
@@ -77,7 +77,7 @@ object Quasiquote {
     // println("quoted:" + code)
     // println("------------->")
     val parser = instantiateParser(parserMap(tag))
-    val mTree = parser(m.inputs.Input.String(code), quasiquoteTermDialect)
+    val mTree = parser(m.Input.String(code), quasiquoteTermDialect)
     // println("<------------")
     // println("mTree:" + mTree.structure)
     // println("------------->")
@@ -147,7 +147,7 @@ object Quasiquote {
 
   def isQuasiquote(symbol: Symbol, tree: Tree)(implicit ctx: Context): Boolean = {
     symbol.exists && symbol.enclosingPackageClass.showFullName == "scala.meta.quasiquotes" &&
-      parserMap.contains(symbol.owner.name.toString.dropRight(1)) &&
+      parserMap.contains(symbol.owner.sourceModule.name.toString) &&
       (symbol.name.toString == "apply" || symbol.name.toString == "unapply" )
   }
 

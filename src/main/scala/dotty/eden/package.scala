@@ -33,16 +33,22 @@ package object eden {
 
   implicit def toMetaTyped(tree: tpd.Tree)(implicit ctx: Context): m.Tree = ???
 
-  // meta placeholder
-  // def meta(arg: Any): Any = ???
+  private var _classloader: ClassLoader = null
+  private var _validForRun: Int = -1
+  private def classloader(implicit ctx: Context): ClassLoader =
+    if (_classloader != null && ctx.runId == _validForRun) _classloader
+    else {
+      val classpath = ctx.platform.classPath.asURLs.toArray
+      _classloader = new java.net.URLClassLoader(classpath, getClass.getClassLoader)
+      _validForRun = ctx.runId
+      _classloader
+    }
 
   /** Expand annotation macros */
   def expandAnnot(mdef: untpd.MemberDef)(implicit ctx: Context): untpd.Tree = {
     val ann = mdef.mods.annotations.filter(isAnnotMacros).headOption
     val expansion = ann.flatMap {
       case ann@Apply(Select(New(tpt), init), Nil) => // TODO: support constant params
-        val classpath = ctx.platform.classPath.asURLs.toArray
-        val classloader = new java.net.URLClassLoader(classpath, getClass.getClassLoader)
         // reflect macros definition
         val moduleClass = classloader.loadClass(tpt.show + "$inline$") // TODO: fully-qualified name
         val module = moduleClass.getField("MODULE$").get(null)
