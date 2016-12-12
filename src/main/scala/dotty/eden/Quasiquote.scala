@@ -68,8 +68,7 @@ object Quasiquote {
   }
 
   // TODO: problem passing Boolean values
-  def expand(tree: untpd.Tree, isTermMode: String)(implicit ctx: Context): untpd.Tree = {
-    val isTerm: Boolean = isTermMode == "true"
+  def expand(tree: untpd.Tree, isTerm: Boolean)(implicit ctx: Context): untpd.Tree = {
     // println("<-------------")
     // println(tree + "@" + tree.pos.line())
     // println("------------->")
