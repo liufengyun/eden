@@ -17,7 +17,7 @@ import Decorators._
  *
  *  1. Annotation Macros is transformed from:
  *
- *    class main extends scala.annotation.MacrosAnnotation {
+ *    class main extends scala.annotation.StaticAnnotation {
  *      def apply(defn: Any): Any = meta {
  *        body
  *      }
@@ -25,7 +25,7 @@ import Decorators._
  *
  *   to:
  *
- *    class main extends scala.annotation.MacrosAnnotation {
+ *    class main extends scala.annotation.StaticAnnotation {
  *      def apply(defn: Any): Any = ???
  *    }
  *
@@ -40,7 +40,7 @@ class MacrosTransform extends MiniPhaseTransform { thisTransformer =>
   def baseMacrosType(implicit ctx: Context) = {
     if (_baseMacrosType != null) _baseMacrosType
     else {
-      _baseMacrosType = ctx.requiredClassRef("scala.annotation.MacrosAnnotation")
+      _baseMacrosType = ctx.requiredClassRef("scala.annotation.StaticAnnotation")
       _baseMacrosType
     }
   }
@@ -75,10 +75,8 @@ class MacrosTransform extends MiniPhaseTransform { thisTransformer =>
       case _ => false
     }
 
-    if (mapplyOpt.isEmpty) {
-      ctx.error("A method `def apply(defn: Any): Any = meta { ... }` is missing for annotation macros", tree.pos)
-      return super.transformTypeDef(tree)
-    }
+    // If user mistake the signature of `apply`, no warning message - pity!
+    if (mapplyOpt.isEmpty) return super.transformTypeDef(tree)
 
     val mapply: DefDef = mapplyOpt.get.asInstanceOf[DefDef]
     val defnSymOld = mapply.vparamss(0)(0).symbol

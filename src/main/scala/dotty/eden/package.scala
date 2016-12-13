@@ -9,8 +9,7 @@ import core.Contexts.Context
 import util.SourceFile
 import parsing.Parsers.Parser
 import core.Symbols._
-import core.SymDenotations._
-import core.Decorators
+import core.{Decorators, StdNames}
 
 package object eden {
   // TODO: move to internal
@@ -80,11 +79,20 @@ package object eden {
   /** An annotation is macros iff it extends `scala.annotation.MacrosAnnotation` */
   def isAnnotMacros(ann: untpd.Tree)(implicit ctx: Context): Boolean = {
     import Decorators._
+    import StdNames._
+
     val symbol = ctx.typer.typedAheadAnnotation(ann)
     if (!symbol.exists) return false
 
-    val macrosAnnotType = ctx.requiredClassRef("scala.annotation.MacrosAnnotation")
-    symbol.typeRef <:< macrosAnnotType
+    val annMethod = symbol.info.decl(nme.apply)
+    val annImplMethod = symbol.owner.info
+      .decl((symbol.name + "$inline").toTermName)
+      .info
+      .decl(nme.apply)
+
+    val macrosAnnotType = ctx.requiredClassRef("scala.annotation.StaticAnnotation")
+
+    symbol.typeRef <:< macrosAnnotType && annMethod.exists && annImplMethod.exists
   }
 }
 

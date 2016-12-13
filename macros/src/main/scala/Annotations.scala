@@ -1,7 +1,7 @@
 import scala.meta._
 import scala.meta.dialects.Dotty
 
-class main extends scala.annotation.MacrosAnnotation {
+class main extends scala.annotation.StaticAnnotation {
   inline def apply(defn: Any): Any = meta.apply {
     val q"object $name { ..$stats }" = defn
     val main = q"""
@@ -11,7 +11,7 @@ class main extends scala.annotation.MacrosAnnotation {
   }
 }
 
-class data extends scala.annotation.MacrosAnnotation  {
+class data extends scala.annotation.StaticAnnotation  {
   inline def apply(defn: Any): Any = meta.apply {
     defn match {
       case q"class $name(..$params)" =>
