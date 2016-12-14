@@ -4,7 +4,7 @@ lazy val dottyVersion = "0.1.2-SNAPSHOT"
 lazy val common = Seq(
   resolvers ++= Seq(
     Resolver.bintrayIvyRepo("scalameta", "maven"),
-    "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+    Resolver.sonatypeRepo("snapshots")
   )
 )
 
@@ -72,9 +72,6 @@ lazy val macrosSetting = Seq(
 
   // Don't import the stdlib for "scalaBinaryVersion"
   autoScalaLibrary := false,
-
-  // Add resolver for Sonatype Snapshots
-  resolvers += Resolver.sonatypeRepo("snapshots"),
 
   libraryDependencies ++= Seq(
     "com.novocode" % "junit-interface" % "0.11" % "test",
