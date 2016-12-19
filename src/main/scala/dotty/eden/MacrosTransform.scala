@@ -12,6 +12,7 @@ import Constants.Constant
 import Contexts.Context
 import Symbols._
 import Decorators._
+import macros._
 
 /** Transform macros definitions
  *
@@ -36,7 +37,7 @@ import Decorators._
 class MacrosTransform extends MiniPhaseTransform { thisTransformer =>
   import ast.tpd._
 
-  var _baseMacrosType: Type = null
+  private var _baseMacrosType: Type = null
   def baseMacrosType(implicit ctx: Context) = {
     if (_baseMacrosType != null) _baseMacrosType
     else {
@@ -45,12 +46,12 @@ class MacrosTransform extends MiniPhaseTransform { thisTransformer =>
     }
   }
 
-  var _metaSymbol: Symbol = null
+  private var _metaPackageObjSymbol: Symbol = null
   def metaSymbol(implicit ctx: Context) = {
-    if (_metaSymbol!= null) _metaSymbol
+    if (_metaPackageObjSymbol!= null) _metaPackageObjSymbol
     else {
-      _metaSymbol = ctx.requiredModule("scala.meta.package")
-      _metaSymbol
+      _metaPackageObjSymbol = ctx.requiredModule("scala.meta.package")
+      _metaPackageObjSymbol
     }
   }
 
@@ -104,7 +105,19 @@ class MacrosTransform extends MiniPhaseTransform { thisTransformer =>
         val defnSym = tree.vparamss(1)(0).symbol
 
         val rhs2 = rhs.changeOwner(mapply.symbol, methodSym).subst(List(defnSymOld), List(defnSym))
-        cpy.DefDef(tree)(rhs = rhs2)
+
+        // replace `this` with `prefix`
+        val metaSym = ctx.requiredClass("scala.meta.Term")
+        val mapper = new TreeMap {
+          override def transform(tree: Tree)(implicit ctx: Context): Tree = tree match {
+            case tree: This if tree.tpe.isRef(metaSym) =>
+              ref(prefixSym)
+            case _ =>
+              super.transform(tree)
+          }
+        }
+
+        cpy.DefDef(tree)(rhs = mapper.transform(rhs2))
       }
 
       val methodTree = buildMethod(ctx.withOwner(methodSym))

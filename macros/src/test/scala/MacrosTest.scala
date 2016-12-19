@@ -13,4 +13,12 @@ class MacrosTest extends TestSuite {
     val p = Point(40, 2)
     assert(p.x == 40 && p.y == 2)
   }
+
+  test("xsd") {
+    @xsd("macros/tests/schema.xsd")
+    object schema
+
+    import schema._
+    val note = new Note("Vassily", "Pupkin", "hello", "This is a test!")
+  }
 }

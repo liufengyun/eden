@@ -47,21 +47,21 @@ package object eden {
   def expandAnnot(mdef: untpd.MemberDef)(implicit ctx: Context): untpd.Tree = {
     val ann = mdef.mods.annotations.filter(isAnnotMacros).headOption
     val expansion = ann.flatMap {
-      case ann@Apply(Select(New(tpt), init), Nil) => // TODO: support constant params
+      case ann@Apply(Select(New(tpt), init), _) => // TODO: support constant params
         // reflect macros definition
         val moduleClass = classloader.loadClass(tpt.show + "$inline$") // TODO: fully-qualified name
         val module = moduleClass.getField("MODULE$").get(null)
         val impl = moduleClass.getDeclaredMethods().find(_.getName == "apply").get
         impl.setAccessible(true)
 
-        val prefix = null
         val expandee = {
           val mods1 = mdef.mods.withAnnotations(mdef.mods.annotations.filter(_ ne ann))
           mdef.withMods(mods1)
         }
-        val mtree = toMetaUntyped(expandee)
-        val mResult = impl.invoke(module, prefix, mtree).asInstanceOf[m.Tree]
-        val result = parse(mResult.syntax)(ctx)
+        val mtree   = toMetaUntyped(expandee)
+        val mprefix = toMetaUntyped(ann)
+        val mResult = impl.invoke(module, mprefix, mtree).asInstanceOf[m.Tree]
+        val result  = parse(mResult.syntax)(ctx)  // TODO: loss of position
         Some(result)
       case _ =>
         None
