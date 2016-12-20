@@ -206,21 +206,22 @@ class Quote(tree: untpd.Tree, args: List[untpd.Tree], isTerm: Boolean = true)(im
       }
     }
 
+    def convert(arg: untpd.Tree, from: Type, to: Type, base: TypeRef): untpd.Tree = {
+      val conv = ctx.typer.inferImplicitArg(
+         base.appliedTo(from, to), msgFun => ctx.error(msgFun(""), arg.pos), arg.pos
+      )
+
+      if (conv.isEmpty) arg
+      else untpd.TypedSplice(conv).appliedTo(arg)
+    }
+
     def unliftImplicitly(arg: untpd.Tree): untpd.Tree = {
       // shortcut
       val fromType = quasiType
       val toType = patternType(arg)
       if (fromType <:< toType || toType <:< fromType) return arg
 
-      val conv = ctx.typer.inferImplicitArg(
-        metaUnliftType.appliedTo(fromType, toType), msgFun => ctx.error(msgFun(""), arg.pos), arg.pos
-      )
-
-      if (conv.isEmpty) arg
-      else {
-        conv.pushAttachment(ctx.typer.TypedAhead, conv)
-        conv.appliedTo(arg)
-      }
+      convert(arg, fromType, toType, metaUnliftType)
     }
 
     def liftImplicitly(arg: untpd.Tree): untpd.Tree = {
@@ -229,15 +230,7 @@ class Quote(tree: untpd.Tree, args: List[untpd.Tree], isTerm: Boolean = true)(im
       val fromType = ctx.typer.typedExpr(arg).tpe
       if (fromType <:< toType) return arg
 
-      val conv = ctx.typer.inferImplicitArg(
-        metaLiftType.appliedTo(fromType.widen, toType), msgFun => ctx.error(msgFun(""), arg.pos), arg.pos
-      )
-
-      if (conv.isEmpty) arg
-      else {
-        conv.pushAttachment(ctx.typer.TypedAhead, conv)
-        conv.appliedTo(arg)
-      }
+      convert(arg, fromType.widen, toType, metaLiftType)
     }
 
     if (quasi.rank > 0) return liftQuasi(quasi.tree.asInstanceOf[Quasi], quasi.rank, optional)

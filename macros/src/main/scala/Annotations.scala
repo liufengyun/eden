@@ -2,6 +2,8 @@ import scala.annotation.StaticAnnotation
 import scala.meta._
 import scala.meta.dialects.Dotty
 
+import scala.collection.immutable.Seq
+
 class main extends StaticAnnotation {
   inline def apply(defn: Any): Any = meta {
     val q"object $name { ..$stats }" = defn
@@ -74,5 +76,40 @@ object loadSchema {
       })
       XsdComplexType(schemaName, schemaFields)
     })
+  }
+}
+
+object dynamic {
+  def name(i: Int) = s"dynamicParam$i"
+  def generate(tps: Seq[Type]): Seq[Term.Param] =
+    for {
+      (tp, index) <- tps.zipWithIndex
+      pname = Term.Name(name(index))
+    } yield param"$pname : $tp"
+
+  def flatten(tp: Type): Seq[Type] = tp match {
+    case Type.And(tp1, tp2) => flatten(tp1) ++ flatten(tp2)
+    case _ => List(tp)
+  }
+}
+
+class dynamic[T] extends StaticAnnotation {
+  inline def apply(defn: Any): Any = meta {
+    defn match {
+      case q"..$mods def $name[..$tparams](...$params): $tpe" =>
+        val dtparams = this match {
+          case q"new $_[$tparam]"  => dynamic.flatten(tparam)
+        }
+        val params2 = params :+ dynamic.generate(dtparams)
+        q"..$mods def $name[..$tparams](...$params2): $tpe"
+      case q"..$mods def $name[..$tparams](...$params): $tpe = $body" =>
+        val dtparams = this match {
+          case q"new $_[$tparam]"  => dynamic.flatten(tparam)
+        }
+        val params2 = params :+ dynamic.generate(dtparams)
+        q"..$mods def $name[..$tparams](...$params2): $tpe = $body"
+      case _ =>
+        abort("@dynamic can only annotate methods")
+    }
   }
 }

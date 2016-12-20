@@ -4,6 +4,13 @@ import scala.meta.dialects.Dotty
 import Decorators._
 
 class QuasiquoteSuite extends TestSuite {
+  test("param\"${name(index)} : $tp\"") {
+    val name = Term.Name("name")
+    val tp = t"X"
+    param"$name : $tp"
+
+    val q"new $_[..$tparams](...$params)" = q"new dynamic[Authorized]()"
+  }
 
   test("val q\"new xsd(${fileName: String})\" = new xsd(\"file\")") {
     val file = "path"
