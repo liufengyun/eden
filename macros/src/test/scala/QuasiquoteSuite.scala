@@ -5,6 +5,12 @@ import Decorators._
 
 class QuasiquoteSuite extends TestSuite {
 
+  test("val q\"new xsd(${fileName: String})\" = new xsd(\"file\")") {
+    val file = "path"
+    val q"new xsd(${fileName: String})" = q"new xsd($file)"
+    assert(fileName == file)
+  }
+
   test("rank-0 liftables") {
     assert(q"foo[${42}]".show[Structure] === "Term.ApplyType(Term.Name(\"foo\"), Seq(Lit(42)))")
     assert(q"${42}".show[Structure] === "Lit(42)")

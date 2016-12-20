@@ -35,9 +35,11 @@ class xsd(fileName: String) extends StaticAnnotation {
   inline def apply(defn: Any): Any = meta {
     defn match {
       case q"object $name" =>
-        val q"new xsd($fileName)" = this
-        val Lit(s_fileName: String) = fileName
-        val schema = loadSchema(s_fileName).map(xsdComplexType => {
+        val a = 3
+        q"val x = $a" // test lifting inside meta block
+
+        val q"new xsd(${fileName: String})" = this
+        val schema = loadSchema(fileName).map(xsdComplexType => {
           val name = Type.Name(xsdComplexType.name)
           val fields = xsdComplexType.fields.map(xsdField => {
             val fieldName = Term.Name(xsdField.name)

@@ -58,7 +58,7 @@ lazy val edenSetting = Seq(
 lazy val macrosSetting = Seq(
   scalacOptions := {
     val edenClassPath = ((classDirectory in eden) in Compile).value
-    Seq("-Ymacros", "-toolcp", edenClassPath.toString) // "-Yplain-printer" "-Xprint:frontend,parser",
+    Seq("-Ymacros", "-toolcp", edenClassPath.toString) // "-Yplain-printer", "-Xprint:frontend,parser", "-Ylog:frontend",
   },
 
   // Dotty version
