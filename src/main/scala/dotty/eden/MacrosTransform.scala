@@ -5,7 +5,6 @@ import core._
 import Names._
 import StdNames._
 import transform.TreeTransforms._
-import DenotTransformers._
 import ast.Trees._
 import Flags._
 import Types._
@@ -78,7 +77,7 @@ class MacrosTransform extends MiniPhaseTransform {
       mdef.withFlags(Flags.EmptyFlags)
     }
 
-    val bodyNew = macrosNew :: template.body.diff(macros)
+    val bodyNew = macrosNew ++ template.body.diff(macros)
     val treeNew = cpy.TypeDef(tree)(rhs = cpy.Template(template)(body = bodyNew))
 
     Thicket(treeNew :: implObj.trees)
@@ -88,7 +87,7 @@ class MacrosTransform extends MiniPhaseTransform {
   def createImplMethod(defn: DefDef, owner: Symbol)(implicit ctx: Context): Tree = {
     val Apply(_, rhs :: _) = defn.rhs
 
-    val methodTp = MethodType(List("prefix".toTermName), List(ctx.definitions.AnyRefType), defn.tpe)
+    val methodTp = MethodType(List("prefix".toTermName), List(ctx.definitions.AnyRefType), defn.tpe.widen)
 
     val methodSym = ctx.newSymbol(owner, defn.name,
       Synthetic | Method | Stable, methodTp, coord = defn.pos).entered
@@ -96,7 +95,7 @@ class MacrosTransform extends MiniPhaseTransform {
     val impl = DefDef(methodSym, rhs)
 
     val prefixSym = impl.vparamss(0)(0).symbol
-    val fromSyms = defn.vparamss.drop(1).flatten.map(_.symbol)
+    val fromSyms = defn.vparamss.flatten.map(_.symbol)
     val toSyms   = impl.vparamss.drop(1).flatten.map(_.symbol)
 
     val rhs2 = rhs.changeOwner(defn.symbol, methodSym).subst(fromSyms, toSyms)
@@ -120,7 +119,7 @@ class MacrosTransform extends MiniPhaseTransform {
     val moduleName = (current.name + "$inline").toTermName
     val moduleSym = ctx.newCompleteModuleSymbol(
       current.owner, moduleName,
-      Synthetic | ModuleVal, Synthetic | ModuleClass,
+      Synthetic, Synthetic,
       defn.ObjectType :: Nil, Scopes.newScope,
       assocFile = current.asClass.assocFile).entered
 
