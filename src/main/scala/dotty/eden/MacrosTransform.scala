@@ -4,7 +4,8 @@ import dotty.tools.dotc._
 import core._
 import Names._
 import StdNames._
-import transform.TreeTransforms.{TransformerInfo, MiniPhaseTransform, TreeTransformer}
+import transform.TreeTransforms._
+import DenotTransformers._
 import ast.Trees._
 import Flags._
 import Types._
@@ -34,21 +35,15 @@ import macros._
  *      def apply(prefix: Any)(defn: Any): Any = body
  *    }
  */
-class MacrosTransform extends MiniPhaseTransform { thisTransformer =>
+class MacrosTransform extends MiniPhaseTransform {
+  thisTransformer =>
+
   import ast.tpd._
 
-  private var _baseMacrosType: Type = null
-  def baseMacrosType(implicit ctx: Context) = {
-    if (_baseMacrosType != null) _baseMacrosType
-    else {
-      _baseMacrosType = ctx.requiredClassRef("scala.annotation.StaticAnnotation")
-      _baseMacrosType
-    }
-  }
-
   private var _metaPackageObjSymbol: Symbol = null
+
   def metaSymbol(implicit ctx: Context) = {
-    if (_metaPackageObjSymbol!= null) _metaPackageObjSymbol
+    if (_metaPackageObjSymbol != null) _metaPackageObjSymbol
     else {
       _metaPackageObjSymbol = ctx.requiredModule("scala.meta.package")
       _metaPackageObjSymbol
@@ -58,80 +53,80 @@ class MacrosTransform extends MiniPhaseTransform { thisTransformer =>
   override def phaseName = "macrosTransform"
 
   override def transformTypeDef(tree: TypeDef)(implicit ctx: Context, info: TransformerInfo): Tree = {
-    if (!tree.isClassDef || ! (tree.tpe.classSymbol.typeRef <:< baseMacrosType))
-      return super.transformTypeDef(tree)
+    if (!tree.isClassDef) return super.transformTypeDef(tree)
 
     val template = tree.rhs.asInstanceOf[Template]
 
-    val mapplyOpt = template.body.find {
-      case mdef @ DefDef(name, Nil, List(List(ValDef(_, tp1, _))), tp2, _) =>
+    val macros = template.body.filter {
+      case mdef : DefDef =>
         val rhsValid = mdef.rhs match {
           case Apply(Select(meta, nme.apply), _) => meta.symbol == metaSymbol
           case _ => false
         }
 
-        name.show == "apply" && rhsValid &&
-          (tp1.symbol eq ctx.definitions.AnyType.symbol) &&
-          (tp2.symbol eq ctx.definitions.AnyType.symbol)
+        mdef.symbol.is(Inline) && rhsValid
       case _ => false
+    }.asInstanceOf[List[DefDef]]
+
+    if (macros.isEmpty) return super.transformTypeDef(tree)
+
+    val implObj = createImplObject(tree.symbol, macros)
+
+    // modify macros body in class def
+    val macrosNew = macros.map { m =>
+      val mdef = cpy.DefDef(m)(rhs = Literal(Constant(())))
+      mdef.withFlags(Flags.EmptyFlags)
     }
 
-    // If user mistake the signature of `apply`, no warning message - pity!
-    if (mapplyOpt.isEmpty) return super.transformTypeDef(tree)
+    val bodyNew = macrosNew :: template.body.diff(macros)
+    val treeNew = cpy.TypeDef(tree)(rhs = cpy.Template(template)(body = bodyNew))
 
-    val mapply: DefDef = mapplyOpt.get.asInstanceOf[DefDef]
-    val defnSymOld = mapply.vparamss(0)(0).symbol
+    Thicket(treeNew :: implObj.trees)
+  }
 
-    // create new object in the same scope
-    val moduleName = (tree.symbol.name + "$inline").toTermName
+  /** create macro implementation for the A$inline object */
+  def createImplMethod(defn: DefDef, owner: Symbol)(implicit ctx: Context): Tree = {
+    val Apply(_, rhs :: _) = defn.rhs
+
+    val methodTp = MethodType(List("prefix".toTermName), List(ctx.definitions.AnyRefType), defn.tpe)
+
+    val methodSym = ctx.newSymbol(owner, defn.name,
+      Synthetic | Method | Stable, methodTp, coord = defn.pos).entered
+
+    val impl = DefDef(methodSym, rhs)
+
+    val prefixSym = impl.vparamss(0)(0).symbol
+    val fromSyms = defn.vparamss.drop(1).flatten.map(_.symbol)
+    val toSyms   = impl.vparamss.drop(1).flatten.map(_.symbol)
+
+    val rhs2 = rhs.changeOwner(defn.symbol, methodSym).subst(fromSyms, toSyms)
+
+    // replace `this` with `prefix`
+    val metaSym = ctx.requiredClass("scala.meta.Term")
+    val mapper = new TreeMap {
+      override def transform(tree: Tree)(implicit ctx: Context): Tree = tree match {
+        case tree: This if tree.tpe.isRef(metaSym) =>
+          ref(prefixSym)
+        case _ =>
+          super.transform(tree)
+      }
+    }
+
+    cpy.DefDef(impl)(rhs = mapper.transform(rhs2))
+  }
+
+  /** create A$inline to hold all macros implementations */
+  def createImplObject(current: Symbol, macros: List[DefDef])(implicit ctx: Context): Thicket = {
+    val moduleName = (current.name + "$inline").toTermName
     val moduleSym = ctx.newCompleteModuleSymbol(
-      tree.symbol.owner, moduleName,
+      current.owner, moduleName,
       Synthetic | ModuleVal, Synthetic | ModuleClass,
       defn.ObjectType :: Nil, Scopes.newScope,
-      assocFile = tree.symbol.asClass.assocFile).entered
+      assocFile = current.asClass.assocFile).entered
 
-    def buildObject(implicit ctx: Context) = {
-      val methodTp = MethodType(List("prefix".toTermName), List(defn.AnyRefType),
-        MethodType(List("defn".toTermName), List(defn.AnyRefType), defn.AnyRefType))
+    val methods = macros.map(m => createImplMethod(m, moduleSym.moduleClass))
 
-      val methodSym = ctx.newSymbol(moduleSym.moduleClass, "apply".toTermName,
-        Synthetic | Method | Stable, methodTp, coord = tree.pos).entered
-
-      def buildMethod(implicit ctx: Context) = {
-        val Apply(_, rhs :: _) = mapply.rhs
-        val tree = DefDef(methodSym, rhs)
-
-        val prefixSym = tree.vparamss(0)(0).symbol
-        val defnSym = tree.vparamss(1)(0).symbol
-
-        val rhs2 = rhs.changeOwner(mapply.symbol, methodSym).subst(List(defnSymOld), List(defnSym))
-
-        // replace `this` with `prefix`
-        val metaSym = ctx.requiredClass("scala.meta.Term")
-        val mapper = new TreeMap {
-          override def transform(tree: Tree)(implicit ctx: Context): Tree = tree match {
-            case tree: This if tree.tpe.isRef(metaSym) =>
-              ref(prefixSym)
-            case _ =>
-              super.transform(tree)
-          }
-        }
-
-        cpy.DefDef(tree)(rhs = mapper.transform(rhs2))
-      }
-
-      val methodTree = buildMethod(ctx.withOwner(methodSym))
-      val moduleTree = ModuleDef(moduleSym, List(methodTree))
-
-      // modify `apply` in class def
-      val applyNew = cpy.DefDef(mapply)(rhs = Literal(Constant(())))
-      val bodyNew = applyNew :: template.body.filter(_ != mapply)
-      val annotTree = cpy.TypeDef(tree)(rhs = cpy.Template(template)(body = bodyNew))
-
-      Thicket(annotTree :: moduleTree.trees)
-    }
-
-    buildObject(ctx.withOwner(moduleSym))
+    ModuleDef(moduleSym, methods)
   }
 }
 
