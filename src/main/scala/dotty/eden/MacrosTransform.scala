@@ -8,17 +8,16 @@ import transform.TreeTransforms._
 import ast.Trees._
 import Flags._
 import Types._
-import Constants.Constant
 import Contexts.Context
 import Symbols._
 import Decorators._
-import macros._
+import Annotations._
 
 /** Transform macros definitions
  *
  *  1. Annotation Macros is transformed from:
  *
- *    class main extends scala.annotation.StaticAnnotation {
+ *    class main {
  *      def apply(defn: Any): Any = meta {
  *        body
  *      }
@@ -26,7 +25,7 @@ import macros._
  *
  *   to:
  *
- *    class main extends scala.annotation.StaticAnnotation {
+ *    class main {
  *      def apply(defn: Any): Any = ???
  *    }
  *
@@ -69,12 +68,16 @@ class MacrosTransform extends MiniPhaseTransform {
 
     if (macros.isEmpty) return super.transformTypeDef(tree)
 
-    val implObj = createImplObject(tree.symbol, macros)
+    val (implObj, implMethods, moduleSym) = createImplObject(tree.symbol, macros)
 
     // modify macros body in class def
-    val macrosNew = macros.map { m =>
-      val mdef = cpy.DefDef(m)(rhs = Literal(Constant(())))
-      mdef.withFlags(Flags.EmptyFlags)
+    val macrosNew = macros.zip(implMethods).map { case (m, impl) =>
+      val args = List(This(tree.symbol.asClass)) :: m.vparamss.map(_.map(p => ref(p.symbol)))
+      val call = Select(ref(moduleSym), impl.symbol.termRef).appliedToArgss(args)
+      val rhs = Select(ref(metaSymbol), "apply".toTermName).appliedTo(call)
+      val mdef = cpy.DefDef(m)(rhs = rhs)
+      mdef.symbol.updateAnnotation(ConcreteBodyAnnotation(rhs))
+      mdef
     }
 
     val bodyNew = macrosNew ++ template.body.diff(macros)
@@ -84,7 +87,7 @@ class MacrosTransform extends MiniPhaseTransform {
   }
 
   /** create macro implementation for the A$inline object */
-  def createImplMethod(defn: DefDef, owner: Symbol)(implicit ctx: Context): Tree = {
+  def createImplMethod(defn: DefDef, owner: Symbol)(implicit ctx: Context): DefDef = {
     val Apply(_, rhs :: _) = defn.rhs
 
     val methodTp = MethodType(List("prefix".toTermName), List(ctx.definitions.AnyRefType), defn.tpe.widen)
@@ -115,7 +118,7 @@ class MacrosTransform extends MiniPhaseTransform {
   }
 
   /** create A$inline to hold all macros implementations */
-  def createImplObject(current: Symbol, macros: List[DefDef])(implicit ctx: Context): Thicket = {
+  def createImplObject(current: Symbol, macros: List[DefDef])(implicit ctx: Context): (Thicket, List[DefDef], Symbol) = {
     val moduleName = (current.name + "$inline").toTermName
     val moduleSym = ctx.newCompleteModuleSymbol(
       current.owner, moduleName,
@@ -125,7 +128,7 @@ class MacrosTransform extends MiniPhaseTransform {
 
     val methods = macros.map(m => createImplMethod(m, moduleSym.moduleClass))
 
-    ModuleDef(moduleSym, methods)
+    (ModuleDef(moduleSym, methods), methods, moduleSym)
   }
 }
 

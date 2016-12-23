@@ -113,3 +113,11 @@ class dynamic[T] extends StaticAnnotation {
     }
   }
 }
+
+class plus extends StaticAnnotation {
+  inline def apply(a: Any, b: Any): Any = meta {
+    val a1 = a.asInstanceOf[Term]
+    val b1 = b.asInstanceOf[Term]
+    q"$a1 + $b1"
+  }
+}

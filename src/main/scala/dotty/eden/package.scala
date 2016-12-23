@@ -47,7 +47,7 @@ package object eden {
   def expandAnnot(mdef: untpd.MemberDef)(implicit ctx: Context): untpd.Tree = {
     val ann = mdef.mods.annotations.filter(isAnnotMacros).headOption
     val expansion = ann.flatMap {
-      case ann@Apply(Select(New(tpt), init), _) =>
+      case ann @ Apply(Select(New(tpt), init), _) =>
         val tpdClass = ctx.typer.typedAheadType(tpt)
 
         val className = tpdClass.symbol.fullName + "$inline$"
@@ -71,6 +71,33 @@ package object eden {
     }
 
     expansion.getOrElse(mdef)
+  }
+
+  private object ExtractApply {
+    def unapply(tree: untpd.Tree): Option[(untpd.Tree, List[List[untpd.Tree]])] = tree match {
+      case Apply(fun, args) =>
+        val Some((f, argss)) = unapply(fun)
+        Some((f, argss :+ args))
+      case _ =>
+        Some((tree, Nil))
+    }
+  }
+
+  /** Expand annotation macros */
+  def expandMetaBlock(tree: tpd.Tree)(implicit ctx: Context): untpd.Tree = tree match {
+    case ExtractApply(Select(obj, method), argss) =>
+      val className = obj.symbol.moduleClass.fullName.toString
+      // reflect macros definition
+      val moduleClass = classloader.loadClass(className)
+      val module = moduleClass.getField("MODULE$").get(null)
+      val impl = moduleClass.getDeclaredMethods().find(_.getName == method.toString).get
+      impl.setAccessible(true)
+
+      val mtrees  = argss.flatten.map(toMetaUntyped)
+      val mResult = impl.invoke(module, mtrees: _*).asInstanceOf[m.Tree]
+      parse(mResult.syntax)(ctx)  // TODO: loss of position
+    case _ =>
+      tree
   }
 
   def parse(code: String)(implicit ctx: Context): untpd.Tree = {
