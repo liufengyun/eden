@@ -114,10 +114,34 @@ class dynamic[T] extends StaticAnnotation {
   }
 }
 
-class plus extends StaticAnnotation {
+class cache extends StaticAnnotation {
+  inline def apply(defn: Any): Any = meta {
+    defn match {
+      case q"..$mods def $name[..$tparams](...$params): $tpe = $body" =>
+        if (tpe.isEmpty)
+          abort("@cache can only annotate method with explicit return type")
+
+        val termName = Term.Name("_" + name.toString)
+        val patName = Pat.Var.Term(termName)
+
+        val varDef = q"var $patName: $tpe = null"
+        val defDef =
+          q"""..$mods def $name[..$tparams](...$params): $tpe = {
+             if ($termName != null) $termName else { $termName = $body; $termName }
+          }"""
+
+        q"{ $varDef ; $defDef }"
+      case _ =>
+        abort("@cache can only annotate method definitions")
+    }
+  }
+}
+
+class plus {
   inline def apply(a: Any, b: Any): Any = meta {
     val a1 = a.asInstanceOf[Term]
     val b1 = b.asInstanceOf[Term]
     q"$a1 + $b1"
   }
 }
+

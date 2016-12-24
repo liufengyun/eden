@@ -106,7 +106,6 @@ package object eden {
     stats match { case List(stat) => stat; case stats => untpd.Thicket(stats) }
   }
 
-  /** An annotation is macros iff it extends `scala.annotation.MacrosAnnotation` */
   def isAnnotMacros(ann: untpd.Tree)(implicit ctx: Context): Boolean = {
     import Decorators._
     import StdNames._
