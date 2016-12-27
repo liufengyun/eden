@@ -26,11 +26,9 @@ package object eden {
   case object TermMode extends Mode
   case object TypeMode extends Mode
 
-  implicit def toMetaUntyped(tree: untpd.Tree)(implicit ctx: Context): m.Tree = {
-    new UntpdConvert(TermMode, ExprLoc).toMTree(tree)
+  def toMeta(tree: untpd.Tree, isTerm: Boolean = true)(implicit ctx: Context): m.Tree = {
+    new UntpdConvert(if (isTerm) TermMode else TypeMode, ExprLoc).toMTree(tree)
   }
-
-  implicit def toMetaTyped(tree: tpd.Tree)(implicit ctx: Context): m.Tree = ???
 
   private var _classloader: ClassLoader = null
   private var _validForRun: Int = -1
@@ -61,8 +59,8 @@ package object eden {
           val mods1 = mdef.mods.withAnnotations(mdef.mods.annotations.filter(_ ne ann))
           mdef.withMods(mods1)
         }
-        val mtree   = toMetaUntyped(expandee)
-        val mprefix = toMetaUntyped(ann)
+        val mtree   = toMeta(expandee)
+        val mprefix = toMeta(ann)
         val mResult = impl.invoke(module, mprefix, mtree).asInstanceOf[m.Tree]
         val result  = parse(mResult.syntax)(ctx)  // TODO: loss of position
         Some(result)
@@ -74,26 +72,29 @@ package object eden {
   }
 
   private object ExtractApply {
-    def unapply(tree: untpd.Tree): Option[(untpd.Tree, List[List[untpd.Tree]])] = tree match {
+    def unapply(tree: untpd.Tree): Option[(untpd.Tree, List[untpd.Tree], List[List[untpd.Tree]])] = tree match {
+      case TypeApply(fun, targs) =>
+        val Some((f, _, argss)) = unapply(fun)
+        Some((f, targs, argss))
       case Apply(fun, args) =>
-        val Some((f, argss)) = unapply(fun)
-        Some((f, argss :+ args))
+        val Some((f, targs, argss)) = unapply(fun)
+        Some((f, targs, argss :+ args))
       case _ =>
-        Some((tree, Nil))
+        Some((tree, Nil, Nil))
     }
   }
 
-  /** Expand annotation macros */
-  def expandMetaBlock(tree: tpd.Tree)(implicit ctx: Context): untpd.Tree = tree match {
-    case ExtractApply(Select(obj, method), argss) =>
-      val className = obj.symbol.moduleClass.fullName.toString
+  /** Expand def macros */
+  def expandDef(tree: tpd.Tree)(implicit ctx: Context): untpd.Tree = tree match {
+    case ExtractApply(Select(obj, method), targs, argss) =>
+      val className = obj.symbol.info.classSymbol.fullName + "$inline$"
       // reflect macros definition
       val moduleClass = classloader.loadClass(className)
       val module = moduleClass.getField("MODULE$").get(null)
       val impl = moduleClass.getDeclaredMethods().find(_.getName == method.toString).get
       impl.setAccessible(true)
 
-      val mtrees  = argss.flatten.map(toMetaUntyped)
+      val mtrees  = toMeta(obj) :: targs.map(tp => toMeta(tp, isTerm = false)) ++ argss.flatten.map(arg => toMeta(arg))
       val mResult = impl.invoke(module, mtrees: _*).asInstanceOf[m.Tree]
       parse(mResult.syntax)(ctx)  // TODO: loss of position
     case _ =>

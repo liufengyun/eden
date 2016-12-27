@@ -58,4 +58,9 @@ class MacrosTest extends TestSuite {
     val rand2 = rand(4)
     assert(rand1 == rand2)
   }
+
+  test("is") {
+    assert(scope.is[String]("hello"))
+    // assert(scope.is("hello"))
+  }
 }

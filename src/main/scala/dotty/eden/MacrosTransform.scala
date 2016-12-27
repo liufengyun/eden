@@ -12,13 +12,14 @@ import Contexts.Context
 import Symbols._
 import Decorators._
 import Annotations._
+import Constants._
 
 /** Transform macros definitions
  *
- *  1. Annotation Macros is transformed from:
+ *  1. Macro definition is transformed from:
  *
  *    class main {
- *      def apply(defn: Any): Any = meta {
+ *      inline def apply[T](defn: Any): Any = meta {
  *        body
  *      }
  *    }
@@ -26,11 +27,11 @@ import Annotations._
  *   to:
  *
  *    class main {
- *      def apply(defn: Any): Any = ???
+ *      <macro> def apply(defn: Any): Any = null
  *    }
  *
  *    object main$inline {
- *      def apply(prefix: Any)(defn: Any): Any = body
+ *      def apply(prefix: Any)(T: Any)(defn: Any): Any = body
  *    }
  */
 class MacrosTransform extends MiniPhaseTransform {
@@ -70,13 +71,12 @@ class MacrosTransform extends MiniPhaseTransform {
 
     val (implObj, implMethods, moduleSym) = createImplObject(tree.symbol, macros)
 
-    // modify macros body in class def
-    val macrosNew = macros.zip(implMethods).map { case (m, impl) =>
-      val args = List(This(tree.symbol.asClass)) :: m.vparamss.map(_.map(p => ref(p.symbol)))
-      val call = Select(ref(moduleSym), impl.symbol.termRef).appliedToArgss(args)
-      val rhs = Select(ref(metaSymbol), "apply".toTermName).appliedTo(call)
-      val mdef = cpy.DefDef(m)(rhs = rhs)
-      mdef.symbol.updateAnnotation(ConcreteBodyAnnotation(rhs))
+    // modify macros body and flags
+    val macrosNew = macros.map { m =>
+      val mdef = cpy.DefDef(m)(rhs = Literal(Constant(null)))
+      mdef.symbol.removeAnnotation(ctx.definitions.BodyAnnot)
+      mdef.symbol.setFlag(Flags.Macro)
+      mdef.symbol.resetFlag(Flags.Inline)
       mdef
     }
 
@@ -90,7 +90,33 @@ class MacrosTransform extends MiniPhaseTransform {
   def createImplMethod(defn: DefDef, owner: Symbol)(implicit ctx: Context): DefDef = {
     val Apply(_, rhs :: _) = defn.rhs
 
-    val methodTp = MethodType(List("prefix".toTermName), List(ctx.definitions.AnyRefType), defn.tpe.widen)
+    def resultType(res: Type): MethodType = {
+      def updateSignature(tp: Type): Type = tp match {
+        case tp: MethodType =>
+          tp.derivedMethodType(
+            tp.paramNames,
+            tp.paramNames.map(x => ctx.definitions.AnyType),
+            updateSignature(tp.resultType)
+          )
+        case _ => ctx.definitions.AnyType
+      }
+
+      MethodType(
+        List("prefix".toTermName),
+        List(ctx.definitions.AnyType),
+        updateSignature(res)
+      )
+    }
+
+    val wtp = defn.tpe.widen
+
+    val methodTp =
+      if (wtp.isInstanceOf[MethodType]) resultType(wtp)
+      else { // PolyType
+        val names = wtp.typeParams.map(_.paramName.toTermName)
+        val types = names.map(x => ctx.requiredClassRef("scala.meta.Type"))
+        resultType(MethodType(names, types, wtp.resultType))
+      }
 
     val methodSym = ctx.newSymbol(owner, defn.name,
       Synthetic | Method | Stable, methodTp, coord = defn.pos).entered
@@ -98,10 +124,10 @@ class MacrosTransform extends MiniPhaseTransform {
     val impl = DefDef(methodSym, rhs)
 
     val prefixSym = impl.vparamss(0)(0).symbol
-    val fromSyms = defn.vparamss.flatten.map(_.symbol)
+    val fromSyms = defn.tparams.map(_.symbol) ::: defn.vparamss.flatten.map(_.symbol)
     val toSyms   = impl.vparamss.drop(1).flatten.map(_.symbol)
 
-    val rhs2 = rhs.changeOwner(defn.symbol, methodSym).subst(fromSyms, toSyms)
+    val rhs2 = rhs.subst(fromSyms, toSyms).changeOwner(defn.symbol, methodSym)
 
     // replace `this` with `prefix`
     val metaSym = ctx.requiredClass("scala.meta.Term")

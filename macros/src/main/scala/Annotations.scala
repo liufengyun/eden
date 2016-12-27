@@ -145,3 +145,11 @@ class plus {
   }
 }
 
+object scope {
+  inline def is[T](a: Any): Any = meta {
+    val tp = T.asInstanceOf[scala.meta.Type]
+    val term = a.asInstanceOf[scala.meta.Term]
+    q"$term.isInstanceOf[$tp]"
+  }
+}
+
