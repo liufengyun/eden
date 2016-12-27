@@ -26,7 +26,7 @@ package object eden {
   case object TermMode extends Mode
   case object TypeMode extends Mode
 
-  def toMeta(tree: untpd.Tree, isTerm: Boolean = true)(implicit ctx: Context): m.Tree = {
+  implicit def toMeta(tree: untpd.Tree, isTerm: Boolean = true)(implicit ctx: Context): m.Tree = {
     new UntpdConvert(if (isTerm) TermMode else TypeMode, ExprLoc).toMTree(tree)
   }
 
