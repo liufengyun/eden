@@ -30,6 +30,8 @@ package object eden {
     new UntpdConvert(if (isTerm) TermMode else TypeMode, ExprLoc).toMTree(tree)
   }
 
+  implicit def toMeta(tree: untpd.Tree)(implicit ctx: Context): m.Tree = toMeta(tree, isTerm = true)
+
   private var _classloader: ClassLoader = null
   private var _validForRun: Int = -1
   private def classloader(implicit ctx: Context): ClassLoader =
