@@ -1,4 +1,5 @@
 package dotty.eden
+package convert
 
 import dotty.tools.dotc.core.Constants._
 import dotty.tools.dotc.core.Types.Type
@@ -32,7 +33,7 @@ import dotty.tools.dotc.core.Flags._
   *
   **/
 
-class UntpdMapping(var mode: Mode, var loc: Loc) {
+class Scala2MetaMapping(var mode: Mode, var loc: Loc) {
 
   // with is keyword
   def withs[T](m: Mode, l: Loc)(f: => T) = {

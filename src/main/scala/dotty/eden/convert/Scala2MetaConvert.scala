@@ -1,4 +1,5 @@
 package dotty.eden
+package convert
 
 import scala.{meta => m}
 import dotty.tools.dotc.ast.{ untpd => d }
@@ -8,12 +9,12 @@ import dotty.tools.dotc.core.StdNames._
 import dotty.tools.dotc.core.Flags._
 import scala.collection.mutable.ListBuffer
 
-class UntpdConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
-  val u = new UntpdMapping(initialMode, initialLoc)
+class Scala2MetaConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
+  val u = new Scala2MetaMapping(initialMode, initialLoc)
 
   // add .toMTree to untyped trees
   private implicit class TreeWrapper(tree: d.Tree) {
-    def toMTree[T <: m.Tree]: T = UntpdConvert.this.toMTree[T](tree)
+    def toMTree[T <: m.Tree]: T = Scala2MetaConvert.this.toMTree[T](tree)
   }
 
   private def toEnums(enums: List[d.Tree]): List[m.Enumerator] = enums.map {

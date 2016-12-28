@@ -25,7 +25,7 @@ import m.dialects.Dotty
  * Credit: https://github.com/densh/joyquote
  *
  */
-object Quasiquote {
+package object quasiquote {
   import tpd._
 
   type MetaParser = (m.Input, m.Dialect) => m.Tree

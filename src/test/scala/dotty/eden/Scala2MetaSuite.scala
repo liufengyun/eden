@@ -1,8 +1,6 @@
 package dotty.eden
 
-import scala.{meta => m}
-
-class UntpdSuite extends EdenSuite {
+class Scala2MetaSuite extends EdenSuite {
   // literals
   syntactic("null")
   syntactic("true")

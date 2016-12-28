@@ -1,4 +1,5 @@
 package dotty.eden
+package transform
 
 import dotty.tools.dotc._
 import core._

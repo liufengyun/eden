@@ -1,4 +1,5 @@
 package dotty.eden
+package quasiquote
 
 import dotty.tools.dotc._
 import core._
@@ -89,7 +90,7 @@ class Quote(tree: untpd.Tree, args: List[untpd.Tree], isTerm: Boolean = true)(im
   val seqType = ctx.requiredClassRef("scala.collection.immutable.Seq")
   val optionType = ctx.requiredClassRef("scala.Option")
   val metaLiftType = ctx.requiredClassRef("scala.meta.quasiquotes.Lift")
-  val metaUnliftType = ctx.requiredClassRef("dotty.eden.Quote.Unlift")
+  val metaUnliftType = ctx.requiredClassRef("dotty.eden.quasiquote.Quote.Unlift")
 
   def seqTypeOf(T: Type) = seqType.appliedTo(T)
 
@@ -236,10 +237,10 @@ class Quote(tree: untpd.Tree, args: List[untpd.Tree], isTerm: Boolean = true)(im
     if (quasi.rank > 0) return liftQuasi(quasi.tree.asInstanceOf[Quasi], quasi.rank, optional)
 
     quasi.tree match {
-      case m.Term.Name(Quasiquote.Hole(i)) =>
+      case m.Term.Name(Hole(i)) =>
         if (isTerm) liftImplicitly(args(i))
         else unliftImplicitly(args(i))
-      case m.Type.Name(Quasiquote.Hole(i)) =>
+      case m.Type.Name(Hole(i)) =>
         if (isTerm) liftImplicitly(args(i))
         else unliftImplicitly(args(i))
     }
@@ -263,7 +264,7 @@ class Quote(tree: untpd.Tree, args: List[untpd.Tree], isTerm: Boolean = true)(im
       // magic happens here with ...$args
       args match {
         case Seq(quasi: Quasi) if quasi.rank == 2 =>
-          select("dotty.eden.Quote").appliedTo(lift(fun), liftQuasi(quasi))
+          select("dotty.eden.quasiquote.Quote").appliedTo(lift(fun), liftQuasi(quasi))
         case _ =>
           select("scala.meta.Term.Apply").appliedTo(lift(fun), liftSeq(args))
       }
