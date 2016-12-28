@@ -6,13 +6,11 @@ import core._
 import ast._
 import Contexts._
 import Names._
-import StdNames._
 import Decorators._
 import Constants._
-import typer.Implicits._
 import Types._
 import Symbols._
-import Trees.{Apply, TypeApply, Typed}
+import Trees.Typed
 
 import scala.{meta => m}
 import scala.compat.Platform.EOL
@@ -56,29 +54,6 @@ object Quote {
 
     Some(recur(Nil, call))
   }
-
-  trait Unlift[I, O] {
-    def unapply(x: I): Option[O]
-  }
-
-  object Unlift {
-    import m.Lit
-
-    def apply[I, O](pf: PartialFunction[I, O]): Unlift[I, O] = new Unlift[I, O] { def unapply(x: I): Option[O] = pf.lift(x) }
-
-    implicit def unliftBool[I >: Lit]: Unlift[I, Boolean]  = Unlift{ case Lit(x: Boolean) => x }
-    implicit def unliftByte[I >: Lit]: Unlift[I, Byte]     = Unlift{ case Lit(x: Byte) => x }
-    implicit def unliftShort[I >: Lit]: Unlift[I, Short]   = Unlift{ case Lit(x: Short) => x }
-    implicit def unliftInt[I >: Lit]: Unlift[I, Int]       = Unlift{ case Lit(x: Int) => x }
-    implicit def unliftLong[I >: Lit]: Unlift[I, Long]     = Unlift{ case Lit(x: Long) => x }
-    implicit def unliftFloat[I >: Lit]: Unlift[I, Float]   = Unlift{ case Lit(x: Float) => x }
-    implicit def unliftDouble[I >: Lit]: Unlift[I, Double] = Unlift{ case Lit(x: Double) => x }
-    implicit def unliftChar[I >: Lit]: Unlift[I, Char]     = Unlift{ case Lit(x: Char) => x }
-    implicit def unliftString[I >: Lit]: Unlift[I, String] = Unlift{ case Lit(x: String) => x }
-    implicit def unliftSymbol[I >: Lit]: Unlift[I, Symbol] = Unlift{ case Lit(x: Symbol) => x }
-    implicit def unliftNull[I >: Lit]: Unlift[I, Null]     = Unlift{ case Lit(null) => null }
-    implicit def unliftUnit[I >: Lit]: Unlift[I, Unit]     = Unlift{ case Lit(()) => () }
-  }
 }
 
 /** Lift scala.meta trees as Dotty trees */
@@ -90,7 +65,7 @@ class Quote(tree: untpd.Tree, args: List[untpd.Tree], isTerm: Boolean = true)(im
   val seqType = ctx.requiredClassRef("scala.collection.immutable.Seq")
   val optionType = ctx.requiredClassRef("scala.Option")
   val metaLiftType = ctx.requiredClassRef("scala.meta.quasiquotes.Lift")
-  val metaUnliftType = ctx.requiredClassRef("dotty.eden.quasiquote.Quote.Unlift")
+  val metaUnliftType = ctx.requiredClassRef("scala.meta.quasiquotes.Unlift")
 
   def seqTypeOf(T: Type) = seqType.appliedTo(T)
 
