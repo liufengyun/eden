@@ -139,17 +139,17 @@ class cache extends StaticAnnotation {
 
 class plus {
   inline def apply(a: Any, b: Any): Any = meta {
-    val a1 = a.asInstanceOf[Term]
-    val b1 = b.asInstanceOf[Term]
-    q"$a1 + $b1"
+    q"$a + $b"
   }
 }
 
 object scope {
   inline def is[T](a: Any): Any = meta {
-    val tp = T.asInstanceOf[scala.meta.Type]
-    val term = a.asInstanceOf[scala.meta.Term]
-    q"$term.isInstanceOf[$tp]"
+    q"$a.isInstanceOf[$T]"
+  }
+
+  inline def both[S, T](a: Any): Any = meta {
+    q"$a.isInstanceOf[$S] && $a.isInstanceOf[$T]"
   }
 }
 

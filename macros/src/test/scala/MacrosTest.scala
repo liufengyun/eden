@@ -59,8 +59,8 @@ class MacrosTest extends TestSuite {
     assert(rand1 == rand2)
   }
 
-  test("is") {
+  test("def with type parameters") {
     assert(scope.is[String]("hello"))
-    // assert(scope.is("hello"))
+    assert(!scope.both[String, List[Int]]("hello"))
   }
 }

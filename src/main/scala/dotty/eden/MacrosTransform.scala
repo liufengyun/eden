@@ -127,20 +127,26 @@ class MacrosTransform extends MiniPhaseTransform {
     val fromSyms = defn.tparams.map(_.symbol) ::: defn.vparamss.flatten.map(_.symbol)
     val toSyms   = impl.vparamss.drop(1).flatten.map(_.symbol)
 
-    val rhs2 = rhs.subst(fromSyms, toSyms).changeOwner(defn.symbol, methodSym)
-
-    // replace `this` with `prefix`
+    // replace `this` with `prefix` and param refs with original refs
     val metaSym = ctx.requiredClass("scala.meta.Term")
     val mapper = new TreeMap {
       override def transform(tree: Tree)(implicit ctx: Context): Tree = tree match {
         case tree: This if tree.tpe.isRef(metaSym) =>
           ref(prefixSym)
+        case tree: Ident =>
+          tree.removeAttachment(macros.OriginSymOfTree) match {
+            case Some(origSym) =>
+              val index = fromSyms.indexOf(origSym)
+              ref(toSyms(index))
+            case _ => tree
+          }
         case _ =>
           super.transform(tree)
       }
     }
 
-    cpy.DefDef(impl)(rhs = mapper.transform(rhs2))
+    val rhs2 = mapper.transform(rhs).changeOwner(defn.symbol, methodSym)
+    cpy.DefDef(impl)(rhs = rhs2)
   }
 
   /** create A$inline to hold all macros implementations */
