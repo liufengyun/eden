@@ -1,4 +1,4 @@
-package dotty.eden
+package scala.meta.eden
 package convert
 
 import dotty.tools.dotc.core.Constants._

@@ -1,4 +1,4 @@
-package dotty.eden
+package scala.meta.eden
 
 class Scala2MetaSuite extends EdenSuite {
   // literals

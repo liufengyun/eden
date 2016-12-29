@@ -1,4 +1,4 @@
-package dotty.eden
+package scala.meta.eden
 package quasiquote
 
 import dotty.tools.dotc._
@@ -239,7 +239,7 @@ class Quote(tree: untpd.Tree, args: List[untpd.Tree], isTerm: Boolean = true)(im
       // magic happens here with ...$args
       args match {
         case Seq(quasi: Quasi) if quasi.rank == 2 =>
-          select("dotty.eden.quasiquote.Quote").appliedTo(lift(fun), liftQuasi(quasi))
+          select("scala.meta.eden.quasiquote.Quote").appliedTo(lift(fun), liftQuasi(quasi))
         case _ =>
           select("scala.meta.Term.Apply").appliedTo(lift(fun), liftSeq(args))
       }

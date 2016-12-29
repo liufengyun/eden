@@ -1,4 +1,4 @@
-package dotty.eden
+package scala.meta.eden
 
 package object convert {
   // outer context of an AST

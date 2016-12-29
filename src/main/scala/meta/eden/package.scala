@@ -1,4 +1,4 @@
-package dotty
+package scala.meta
 
 import scala.{meta => m}
 import dotty.tools.dotc._

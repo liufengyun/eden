@@ -1,4 +1,4 @@
-package dotty.eden
+package scala.meta.eden
 package transform
 
 import dotty.tools.dotc._

@@ -1,4 +1,4 @@
-package dotty.eden
+package scala.meta.eden
 
 import dotty.tools.dotc._
 import ast._

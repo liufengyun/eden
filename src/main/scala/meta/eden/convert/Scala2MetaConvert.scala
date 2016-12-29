@@ -1,12 +1,13 @@
-package dotty.eden
+package scala.meta.eden
 package convert
 
 import scala.{meta => m}
-import dotty.tools.dotc.ast.{ untpd => d }
-import dotty.tools.dotc.ast.untpd.modsDeco
-import dotty.tools.dotc.core.Contexts.Context
-import dotty.tools.dotc.core.StdNames._
-import dotty.tools.dotc.core.Flags._
+import dotty.tools.dotc._
+import ast.{ untpd => d }
+import ast.untpd.modsDeco
+import core.Contexts.Context
+import core.StdNames._
+import core.Flags._
 import scala.collection.mutable.ListBuffer
 
 class Scala2MetaConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {

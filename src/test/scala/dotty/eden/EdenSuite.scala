@@ -1,11 +1,12 @@
-package dotty.eden
+package scala.meta.eden
 
 import org.scalatest.FunSuite
 import scala.{meta => m}
-import dotty.tools.dotc.ast.{tpd, untpd}
-import dotty.tools.dotc.parsing.Parsers.Parser
-import dotty.tools.dotc.util.SourceFile
-import dotty.tools.dotc.core.Contexts.ContextBase
+import dotty.tools.dotc._
+import ast.{tpd, untpd}
+import parsing.Parsers.Parser
+import util.SourceFile
+import core.Contexts.ContextBase
 import scala.meta.dialects.Dotty
 
 trait EdenSuite extends FunSuite {
