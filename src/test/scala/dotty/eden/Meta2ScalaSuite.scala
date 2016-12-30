@@ -4,24 +4,24 @@ import scala.{meta => m}
 import dotty.tools.dotc._
 import ast.untpd
 
-class Scala2MetaSuite extends EdenSuite {
+class Meta2ScalaSuite extends EdenSuite {
 
-  def syntactic(code: String, expect: m.Stat) = {
+  def syntactic(code: String, expect: untpd.Tree) = {
     test(code) {
-      val dTree: untpd.Tree = code
-      var convertedTree: m.Tree = dTree
-      assert(expect.structure == convertedTree.structure)
+      val mTree: m.Tree = code
+      var convertedTree: untpd.Tree = mTree
+      assert(expect.toString == convertedTree.toString)
     }
   }
 
   def syntactic(code: String, verbose: Boolean = false): Unit = {
     test(code) {
-      val mTree: m.Tree = code
       val dTree: untpd.Tree = code
-      var convertedTree: m.Tree = null
+      val mTree: m.Tree = code
+      var convertedTree: untpd.Tree = null
 
-      try { convertedTree = dTree } finally {
-        if (convertedTree == null || mTree.structure != convertedTree.structure || verbose)
+      try { convertedTree = mTree } finally {
+        if (convertedTree == null || dTree.toString != convertedTree.toString || verbose)
           debug
       }
 
@@ -30,11 +30,11 @@ class Scala2MetaSuite extends EdenSuite {
         println("code:" + code)
         println("dotty:" + dTree)
         println("meta:" + mTree.structure)
-        if (convertedTree != null) println("conv:" + convertedTree.structure)
+        if (convertedTree != null) println("conv:" + convertedTree)
         println("------------>")
       }
 
-      assert(mTree.structure == convertedTree.structure)
+      assert(dTree.toString == convertedTree.toString)
     }
   }
 

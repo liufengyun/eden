@@ -16,11 +16,13 @@ package object eden {
 
   implicit def toMeta(tree: untpd.Tree)(implicit ctx: Context): m.Tree = toMeta(tree, isTerm = true)
 
+  /*
   def toScala(mtree: m.Tree)(implicit ctx: Context): untpd.Tree = {
     val parser = new Parser(new SourceFile("<meta>", mtree.syntax.toArray))
     val (_, stats) = parser.templateStatSeq()
     stats match { case List(stat) => stat; case stats => untpd.Thicket(stats) }
-  }
+  } */
 
+  implicit def toScala(tree: m.Tree)(implicit ctx: Context): untpd.Tree = Meta2ScalaConvert.toScala(tree)
 }
 

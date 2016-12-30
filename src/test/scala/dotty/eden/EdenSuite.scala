@@ -3,14 +3,14 @@ package scala.meta.eden
 import org.scalatest.FunSuite
 import scala.{meta => m}
 import dotty.tools.dotc._
-import ast.{tpd, untpd}
+import ast.untpd
 import parsing.Parsers.Parser
 import util.SourceFile
 import core.Contexts.ContextBase
 import scala.meta.dialects.Dotty
 
 trait EdenSuite extends FunSuite {
-  implicit val ctx = (new ContextBase).initialCtx
+  implicit val ctx = (new ContextBase).initialCtx.fresh
 
   implicit def dottyParse(code: String): untpd.Tree = {
     val (_, stats) = new Parser(new SourceFile("<meta>", code.toCharArray)).templateStatSeq()
@@ -20,37 +20,5 @@ trait EdenSuite extends FunSuite {
   implicit def metaParse(code: String): m.Stat = {
     import scala.meta._
     code.parse[m.Stat].get
-  }
-
-  def syntactic(code: String, expect: m.Stat) = {
-    test(code) {
-      val dTree: untpd.Tree = code
-      var convertedTree: m.Tree = dTree
-      assert(expect.structure == convertedTree.structure)
-    }
-  }
-
-  def syntactic(code: String, verbose: Boolean = false): Unit = {
-    test(code) {
-      val mTree: m.Tree = code
-      val dTree: untpd.Tree = code
-      var convertedTree: m.Tree = null
-
-      try { convertedTree = dTree } finally {
-        if (convertedTree == null || mTree.structure != convertedTree.structure || verbose)
-          debug
-      }
-
-      def debug = {
-        println("<------------")
-        println("code:" + code)
-        println("dotty:" + dTree)
-        println("meta:" + mTree.structure)
-        if (convertedTree != null) println("conv:" + convertedTree.structure)
-        println("------------>")
-      }
-
-      assert(mTree.structure == convertedTree.structure)
-    }
   }
 }

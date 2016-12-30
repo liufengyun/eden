@@ -13,23 +13,46 @@ import scala.collection.mutable.ListBuffer
 class Scala2MetaConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Context) {
   val u = new Scala2MetaMapping(initialMode, initialLoc)
 
-  // add .toMTree to untyped trees
-  private implicit class TreeWrapper(tree: d.Tree) {
+  // add .toMTree to Scala trees
+  private implicit class ScalaWrapper(tree: d.Tree) {
     def toMTree[T <: m.Tree]: T = Scala2MetaConvert.this.toMTree[T](tree)
   }
 
-  private def toEnums(enums: List[d.Tree]): List[m.Enumerator] = enums.map {
-    case t: d.GenFrom =>
-      val mpat = u.withs(TermMode, PatLoc) { t.pat.toMTree[m.Pat] }
-      val mexpr = u.withs(TermMode, ExprLoc) { t.expr.toMTree[m.Term] }
-      m.Enumerator.Generator(mpat, mexpr)
-    case t: d.GenAlias =>
-      val mpat = u.withs(TermMode, PatLoc) { t.pat.toMTree[m.Pat] }
-      val mexpr = u.withs(TermMode, ExprLoc) { t.expr.toMTree[m.Term] }
-      m.Enumerator.Val(mpat, mexpr)
-    case t =>
-      val expr = u.withs(TermMode, ExprLoc) { t.toMTree[m.Term] }
-      m.Enumerator.Guard(expr)
+  // carry positions with the converted tree
+  private implicit class MetaWrapper(mtree: m.Tree)(implicit ctx: Context) {
+    def from[S <: m.Tree](tree: ast.Positioned): S = if (tree.pos.exists && !mtree.isInstanceOf[m.Lit]) { // TODO: Lit ?
+      val input = m.inputs.Input.None
+      val dialet = m.dialects.Dotty
+      val pos = m.internal.tokens.TokenStreamPosition(tree.pos.start, tree.pos.end) // point get lost
+      val origin = m.internal.ast.Origin.Parsed(input, dialet, pos)
+      mtree.withOrigin(origin).asInstanceOf[S]
+    } else mtree.asInstanceOf[S]
+  }
+
+  private def toEnums(enums: List[d.Tree]): List[m.Enumerator] = enums.map { enum =>
+    (enum match {
+      case t: d.GenFrom =>
+        val mpat = u.withs(TermMode, PatLoc) {
+          t.pat.toMTree[m.Pat]
+        }
+        val mexpr = u.withs(TermMode, ExprLoc) {
+          t.expr.toMTree[m.Term]
+        }
+        m.Enumerator.Generator(mpat, mexpr)
+      case t: d.GenAlias =>
+        val mpat = u.withs(TermMode, PatLoc) {
+          t.pat.toMTree[m.Pat]
+        }
+        val mexpr = u.withs(TermMode, ExprLoc) {
+          t.expr.toMTree[m.Term]
+        }
+        m.Enumerator.Val(mpat, mexpr)
+      case t =>
+        val expr = u.withs(TermMode, ExprLoc) {
+          t.toMTree[m.Term]
+        }
+        m.Enumerator.Guard(expr)
+    }).from[m.Enumerator](enum)
   }
 
   private implicit def toMods(modifiers: d.Modifiers): List[m.Mod] = {
@@ -37,47 +60,54 @@ class Scala2MetaConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Contex
 
     if (modifiers.hasAnnotations) {
       lb ++= modifiers.annotations.map { annot =>
-        m.Mod.Annot(u.withs(TermMode, SuperCallLoc) { annot.toMTree[m.Ctor.Call] })
+        m.Mod.Annot(u.withs(TermMode, SuperCallLoc) { annot.toMTree[m.Ctor.Call] }).from[m.Mod](annot)
       }
     }
 
+    if (modifiers.is(Case))
+      lb += m.Mod.Case()
+
     import d.{Mod => mod}
-    lb ++= modifiers.mods.map {
-      case _: mod.Override =>
-        m.Mod.Override()
-      case _: mod.Abstract =>
-        m.Mod.Abstract()
-      case _: mod.Final    =>
-        m.Mod.Final()
-      case _: mod.Implicit =>
-        m.Mod.Implicit()
-      case _: mod.Inline   =>
-        m.Mod.Inline()
-      case _: mod.Lazy     =>
-        m.Mod.Lazy()
-      case _: mod.Private  =>
-        if (modifiers.hasPrivateWithin)
-          m.Mod.Private(m.Name.Indeterminate(modifiers.privateWithin.show))
-        else if (modifiers is Local)
-          m.Mod.Private(m.Term.This(m.Name.Anonymous()))
-        else
-          m.Mod.Private(m.Name.Anonymous())
-      case _: mod.Protected=>
-        if (modifiers.hasPrivateWithin)
-          m.Mod.Protected(m.Name.Indeterminate(modifiers.privateWithin.show))
-        else if (modifiers is Local)
-          m.Mod.Protected(m.Term.This(m.Name.Anonymous()))
-        else
-          m.Mod.Protected(m.Name.Anonymous())
-      case _: mod.Sealed   =>
-        m.Mod.Sealed()
-      case _: mod.Type     =>
-        ???
-      case _: mod.Val if u.loc == ParamLoc   =>
-        m.Mod.ValParam()
-      case _: mod.Var if u.loc == ParamLoc   =>
-        m.Mod.VarParam()
-      case _ => null
+    lb ++= modifiers.mods.map { modScala =>
+      val modMeta = modScala match {
+        case _: mod.Override =>
+          m.Mod.Override()
+        case _: mod.Abstract =>
+          m.Mod.Abstract()
+        case _: mod.Final =>
+          m.Mod.Final()
+        case _: mod.Implicit =>
+          m.Mod.Implicit()
+        case _: mod.Inline =>
+          m.Mod.Inline()
+        case _: mod.Lazy =>
+          m.Mod.Lazy()
+        case _: mod.Private =>
+          if (modifiers.hasPrivateWithin)
+            m.Mod.Private(m.Name.Indeterminate(modifiers.privateWithin.show))
+          else if (modifiers is Local)
+            m.Mod.Private(m.Term.This(m.Name.Anonymous()))
+          else
+            m.Mod.Private(m.Name.Anonymous())
+        case _: mod.Protected =>
+          if (modifiers.hasPrivateWithin)
+            m.Mod.Protected(m.Name.Indeterminate(modifiers.privateWithin.show))
+          else if (modifiers is Local)
+            m.Mod.Protected(m.Term.This(m.Name.Anonymous()))
+          else
+            m.Mod.Protected(m.Name.Anonymous())
+        case _: mod.Sealed =>
+          m.Mod.Sealed()
+        case _: mod.Type =>
+          ???
+        case _: mod.Val if u.loc == ParamLoc =>
+          m.Mod.ValParam()
+        case _: mod.Var if u.loc == ParamLoc =>
+          m.Mod.VarParam()
+        case _ => null
+      }
+
+      if (modMeta == null) modMeta else modMeta.from(modScala) // pos
     }.filter(_ != null)
 
     if (modifiers.is(Covariant)) lb += m.Mod.Covariant()
@@ -85,6 +115,7 @@ class Scala2MetaConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Contex
 
     lb.toList
   }
+
 
   def toMTree[T <: m.Tree](tree: d.Tree): T = (tree match {
     // ============ LITERALS ============
@@ -96,19 +127,19 @@ class Scala2MetaConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Contex
       if (t.qual.name == tpnme.EMPTY)
         m.Term.This(m.Name.Anonymous())
       else
-        m.Term.This(m.Name.Indeterminate(t.qual.name.show))
+        m.Term.This(m.Name.Indeterminate(t.qual.name.show)) // pos
 
     case t: d.Super =>
-      val mmix = if (t.mix.isEmpty)
+      val mmix: m.Name.Qualifier = if (t.mix.name == tpnme.EMPTY)
         m.Name.Anonymous()
       else
-        m.Name.Indeterminate(t.mix.show)
+        m.Name.Indeterminate(t.mix.show).from(t.mix) // pos
 
       val qual = t.qual.asInstanceOf[d.This].qual
-      val mqual = if (qual.isEmpty)
+      val mqual: m.Name.Qualifier = if (qual.isEmpty)
         m.Name.Anonymous()
       else
-        m.Name.Indeterminate(qual.name.show)
+        m.Name.Indeterminate(qual.name.show).from(qual)
 
       m.Term.Super(mqual, mmix)
 
@@ -225,7 +256,7 @@ class Scala2MetaConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Contex
       def transform(t: d.Tree) = t match {
         case t: d.Block =>
           val stats = (t.stats :+ t.expr).filterNot(_.isEmpty).map(toMTree[m.Stat])
-          m.Term.Block(stats)
+          m.Term.Block(stats).from(t)  // pos
         case _ => t.toMTree[m.Term]
       }
 
@@ -386,7 +417,7 @@ class Scala2MetaConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Contex
       // must have one alternative
       val pats:+mpat = t.trees.map(toMTree[m.Pat])
       pats.foldRight(mpat) { (pat, alt) =>
-        m.Pat.Alternative(pat, alt)
+        m.Pat.Alternative(pat, alt)                    // TODO: pos?
       }
 
     case t: d.Tuple if u.mode == TermMode && u.loc == PatLoc =>
@@ -443,12 +474,12 @@ class Scala2MetaConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Contex
     // ============ DECLS ============
     case u.VarDcl(modifiers, name, tpt) =>
       val mtpt = u.withMode(TypeMode) { tpt.toMTree[m.Type] }
-      val mname = u.withLoc(PatLoc) { d.Ident(name).toMTree[m.Pat.Var.Term] }
+      val mname = u.withLoc(PatLoc) { d.Ident(name).toMTree[m.Pat.Var.Term] }  // TODO: pos of name?
       m.Decl.Var(modifiers, List(mname), mtpt)
 
     case u.ValDcl(modifiers, name, tpt) =>
       val mtpt = u.withMode(TypeMode) { tpt.toMTree[m.Type] }
-      val mname = u.withLoc(PatLoc) { d.Ident(name).toMTree[m.Pat.Var.Term] }
+      val mname = u.withLoc(PatLoc) { d.Ident(name).toMTree[m.Pat.Var.Term] }  // TODO: pos of name?
       m.Decl.Val(modifiers, List(mname), mtpt)
 
     case t: d.DefDef if t.rhs.isEmpty =>
@@ -478,7 +509,7 @@ class Scala2MetaConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Contex
     case u.ValDef(modifiers, name, tpt, rhs) =>
       val mrhs = u.withMode(TermMode) { rhs.toMTree[m.Term] }
       val mtpt = u.withMode(TypeMode) { tpt.map(toMTree[m.Type]) }
-      val mname = u.withLoc(PatLoc) { d.Ident(name).toMTree[m.Pat] }
+      val mname = u.withLoc(PatLoc) { d.Ident(name).toMTree[m.Pat] }   // TODO: pos of name
       m.Defn.Val(modifiers, List(mname), mtpt, mrhs)
 
     case u.VarDef(modifiers, name, tpt, rhs) =>
@@ -545,21 +576,7 @@ class Scala2MetaConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Contex
 
     case t: d.Template =>
       val mparents = u.withs(TermMode, SuperCallLoc) { t.parents.map(toMTree[m.Ctor.Call]) }
-      val mself =  {
-        val self = t.self
-
-        val mname = if (self.name == nme.WILDCARD)
-          m.Name.Anonymous()
-        else
-          m.Term.Name(self.name.show)
-
-        val mtpt = if (self.isEmpty)
-          None
-        else
-          Some(u.withMode(TypeMode) { self.tpt.toMTree[m.Type.Arg] })
-
-        m.Term.Param(Nil, mname, mtpt, None)
-      }
+      val mself =  u.withLoc(ParamLoc) { t.self.toMTree[m.Term.Param] }
 
       val mstats = t.body match {
         case Nil => None
@@ -654,6 +671,6 @@ class Scala2MetaConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Contex
       println("location: " + u.loc)
       println(tree);
       ???
-  }).asInstanceOf[T]
+  }).from(tree)
 
 }
