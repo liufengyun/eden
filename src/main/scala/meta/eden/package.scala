@@ -23,6 +23,7 @@ package object eden {
     stats match { case List(stat) => stat; case stats => untpd.Thicket(stats) }
   } */
 
-  implicit def toScala(tree: m.Tree)(implicit ctx: Context): untpd.Tree = Meta2ScalaConvert.toScala(tree)
+  implicit def toScala(tree: m.Tree)(implicit ctx: Context): untpd.Tree =
+    new Meta2ScalaConvert().toScala(tree)
 }
 

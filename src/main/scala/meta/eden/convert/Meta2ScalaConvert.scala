@@ -13,7 +13,23 @@ import core.Constants._
 import util.Positions
 import scala.collection.mutable.ListBuffer
 
-object Meta2ScalaConvert {
+class Meta2ScalaConvert(private var mode: Mode = TermMode, private var loc: Loc = ExprLoc) {
+  def withMode[T <: d.Tree](m: Mode)(f: => T) = {
+    val before = mode
+    mode = m
+    val res = f
+    mode = before
+    res
+  }
+
+  def withLoc[T <: d.Tree](l: Loc)(f: => T) = {
+    val before = loc
+    loc = l
+    val res = f
+    loc = before
+    res
+  }
+
   // carry positions with the converted tree
   private implicit class ScalaWrapper(tree: ast.Positioned) {
     def from[S <: ast.Positioned](mtree: m.Tree): S = mtree.origin match {
@@ -124,19 +140,16 @@ object Meta2ScalaConvert {
     case m.Term.Apply(fun, args) =>
       d.Apply(fun, args)
     case m.Term.ApplyInfix(lhs, m.Term.Name(name), targs, args) => // TODO: targs?
+      require(targs.size == 0)
       if (targs.size == 0 && args.size == 1)
         d.InfixOp(lhs, name.toTermName, args(0))
-      else {
-        val fun: d.Tree =
-          if (targs.size > 0)
-            d.TypeApply(lhs, targs)
-          else
-            lhs
-
-        d.Apply(fun, args)
-      }
+      else
+        d.InfixOp(lhs, name.toTermName, d.Tuple(args))
     case m.Term.ApplyType(fun, targs) =>
-      d.TypeApply(fun, targs)
+      if (loc == SuperCallLoc)
+        withMode(TypeMode) { d.AppliedTypeTree(fun, targs) }
+      else
+        d.TypeApply(fun, targs)
     case m.Term.ApplyUnary(m.Term.Name(op), arg) =>
       d.PrefixOp(op.toTermName, arg)
     case m.Term.Assign(lhs, rhs) =>
@@ -183,10 +196,10 @@ object Meta2ScalaConvert {
       d.ForDo(enums, body)
     case m.Term.ForYield(enums, body) =>
       d.ForYield(enums, body)
-    case m.Term.New(m.Template(Nil, List(mctor), m.Term.Param(Nil, m.Name.Anonymous(), None, None), None)) =>
+    case m.Term.New(m.Template(Nil, Seq(mctor), m.Term.Param(Nil, m.Name.Anonymous(), None, None), None)) =>
       mctor match {
-        case m.Term.Apply(ctor, args) => d.New(ctor, args)
-        case _ => d.New(mctor, Nil)
+        case m.Term.Apply(ctor, args) => d.New(withLoc(SuperCallLoc) { (ctor: d.Tree) }, List(args))
+        case _ => d.New(withLoc(SuperCallLoc) { mctor }, Nil)
       }
     case m.Term.New(templ) =>
       d.New(templ)
@@ -381,7 +394,7 @@ object Meta2ScalaConvert {
     case m.Ctor.Ref.Name(v) =>
       d.Ident(v.toTypeName)
     case m.Ctor.Ref.Select(qual, name) =>
-      d.Select(qual, name)
+      d.Select(qual, (name: d.Ident).name)
     case m.Ctor.Ref.Project(qual, name) =>
       d.Select(qual, name)
     // case m.Ctor.Ref.Function(name) =>                            // TODO: what is this?

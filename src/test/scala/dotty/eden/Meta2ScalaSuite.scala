@@ -137,6 +137,7 @@ class Meta2ScalaSuite extends EdenSuite {
   syntactic("do { println(a); a++; } while (a > 5)")
   syntactic("return a")
   syntactic("new List(5)")
+  syntactic("new A(5)(6)")
   syntactic("new List[Int](5)")
   syntactic("new List[List[Int]](List(5))")
   syntactic("new Map[Int, String]")
