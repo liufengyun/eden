@@ -13,6 +13,16 @@ import core.Constants._
 import util.Positions
 import scala.collection.mutable.ListBuffer
 
+object ExtractCall {
+  def unapply(tree: m.Tree): Option[(m.Tree, Seq[Seq[m.Tree]])] = tree match {
+    case m.Term.Apply(fun, args) =>
+      val Some((f, argss)) = unapply(fun)
+      Some((f, argss :+ args))
+    case _ =>
+      Some((tree, Nil))
+  }
+}
+
 class Meta2ScalaConvert(private var mode: Mode = TermMode, private var loc: Loc = ExprLoc) {
   def withMode[T <: d.Tree](m: Mode)(f: => T) = {
     val before = mode
@@ -22,7 +32,7 @@ class Meta2ScalaConvert(private var mode: Mode = TermMode, private var loc: Loc 
     res
   }
 
-  def withLoc[T <: d.Tree](l: Loc)(f: => T) = {
+  def withLoc[T <: d.Tree](l: Loc)(f: => T): T = {
     val before = loc
     loc = l
     val res = f
@@ -174,8 +184,10 @@ class Meta2ScalaConvert(private var mode: Mode = TermMode, private var loc: Loc 
     case m.Term.Tuple(args) =>
       d.Tuple(args)
     case m.Term.Block(stats) =>
-      require(stats.size > 0)
-      d.Block(stats.dropRight(1), stats.last)
+      if (stats.size == 0)
+        d.Block(stats, d.EmptyTree)
+      else
+        d.Block(stats.dropRight(1), stats.last)
     case m.Term.If(cond, thenp, elsep) =>
       d.If(cond, thenp, elsep)
     case m.Term.Match(expr, cases) =>
@@ -198,8 +210,12 @@ class Meta2ScalaConvert(private var mode: Mode = TermMode, private var loc: Loc 
       d.ForYield(enums, body)
     case m.Term.New(m.Template(Nil, Seq(mctor), m.Term.Param(Nil, m.Name.Anonymous(), None, None), None)) =>
       mctor match {
-        case m.Term.Apply(ctor, args) => d.New(withLoc(SuperCallLoc) { (ctor: d.Tree) }, List(args))
-        case _ => d.New(withLoc(SuperCallLoc) { mctor }, Nil)
+        case m.Term.Apply(ctor, args) =>
+          val tpt = withLoc(SuperCallLoc) { (ctor: d.Tree) }
+          d.Apply(d.Select(d.New(tpt), nme.CONSTRUCTOR), args)
+        case _ =>
+          val tpt = withLoc(SuperCallLoc) { (mctor: d.Tree) }
+          d.Apply(d.Select(d.New(tpt), nme.CONSTRUCTOR), Nil)
       }
     case m.Term.New(templ) =>
       d.New(templ)
@@ -211,12 +227,16 @@ class Meta2ScalaConvert(private var mode: Mode = TermMode, private var loc: Loc 
       d.NamedArg(name.toTermName, expr)
     case m.Term.Arg.Repeated(expr) =>
       d.Typed(expr, d.Ident(tpnme.WILDCARD_STAR))
-    case m.Term.Param(mods, name, tpOpt, default) =>
+    case m.Term.Param(Nil, m.Name.Anonymous(), None, None) =>
+      d.EmptyValDef
+    case m.Term.Param(mods, name, tpOpt, defaultOpt) =>
       val scalaName = name match {
         case m.Name.Anonymous() => nme.WILDCARD
         case m.Term.Name(name) =>  name.toTermName
       }
-      d.ValDef(scalaName, tpOpt, default).withMods(mods).withFlags(Param)
+      val tpt = if (tpOpt.isEmpty) d.TypeTree() else (tpOpt.get : d.Tree)
+      val default = if (defaultOpt.isEmpty) d.EmptyTree else (defaultOpt : d.Tree)
+      d.ValDef(scalaName, tpt, default).withMods(mods).withFlags(Param)
 
     case m.Type.Name(name) =>
       d.Ident(name.toTypeName)
@@ -350,22 +370,24 @@ class Meta2ScalaConvert(private var mode: Mode = TermMode, private var loc: Loc 
       else
         d.TypeDef(name.toTypeName, bounds).withMods(mods)
 
-    case m.Defn.Val(mods, pats, tpe, rhs) =>
+    case m.Defn.Val(mods, pats, tpOpt, rhs) =>
+      val tpt = if (tpOpt.isEmpty) d.TypeTree() else (tpOpt.get : d.Tree)
       pats match {
         case List(m.Pat.Var.Term(m.Term.Name(name))) =>
-          d.ValDef(name.toTermName, tpe, rhs: d.Tree).withMods(mods)
+          d.ValDef(name.toTermName, tpt, rhs: d.Tree).withMods(mods)
         case _ =>
-          d.PatDef(mods, pats, tpe, rhs: d.Tree)
+          d.PatDef(mods, pats, tpt, rhs: d.Tree)
       }
-    case m.Defn.Var(mods, pats, tpe, rhs) =>
+    case m.Defn.Var(mods, pats, tpOpt, rhs) =>
+       val tpt = if (tpOpt.isEmpty) d.TypeTree() else (tpOpt.get : d.Tree)
        pats match {
         case List(m.Pat.Var.Term(m.Term.Name(name))) =>
-          d.ValDef(name.toTermName, tpe, rhs: d.Tree).withMods(mods)
+          d.ValDef(name.toTermName, tpt, rhs: d.Tree).withMods(mods)
         case _ =>
-          d.PatDef(mods, pats, tpe, rhs: d.Tree)
+          d.PatDef(mods, pats, tpt, rhs: d.Tree)
       }
     case m.Defn.Def(mods, m.Term.Name(name), tparams, paramss, tpe, body) =>
-      d.DefDef(name.toTermName, tparams, paramss, tpe, body).withMods(mods)
+      d.DefDef(name.toTermName, tparams, paramss, tpe, body : d.Tree).withMods(mods)
     // case m.Defn.Macro(mods, name, tparams, paramss, tpe, body) =>
     case m.Defn.Type(mods, m.Type.Name(name), tparams, body) =>
       if (tparams.size > 0)
@@ -396,7 +418,7 @@ class Meta2ScalaConvert(private var mode: Mode = TermMode, private var loc: Loc 
     case m.Ctor.Ref.Select(qual, name) =>
       d.Select(qual, (name: d.Ident).name)
     case m.Ctor.Ref.Project(qual, name) =>
-      d.Select(qual, name)
+      d.Select(qual, (name: d.Ident).name)
     // case m.Ctor.Ref.Function(name) =>                            // TODO: what is this?
 
     case m.Template(_, parents, self, stats) =>                     // no early stats in Dotty
@@ -405,7 +427,21 @@ class Meta2ScalaConvert(private var mode: Mode = TermMode, private var loc: Loc 
         case None => Nil
         case Some(stats) => toScalaList(stats)
       }
-      d.Template(null, parents, self, scalaStats)                  // constructor is handled in ClassDef
+      val parentCalls = for (ExtractCall(tpe, argss) <- parents) yield {
+        val tpt = withLoc(SuperCallLoc) { tpe: d.Tree }
+
+        if (argss.size == 0) tpt
+        else {
+          val ctor = d.Select(d.New(tpt), nme.CONSTRUCTOR)
+          val zero = d.Apply(ctor, argss(0))
+          argss.drop(1).foldLeft(zero) { (acc, args) =>
+            d.Apply(acc, args)
+          }
+        }
+      }
+
+      val init = d.DefDef(nme.CONSTRUCTOR, List(), List(), d.TypeTree(), d.EmptyTree)
+      d.Template(init, parentCalls.toList, self, scalaStats)                  // constructor is handled in ClassDef
 
     case m.Enumerator.Generator(pat, rhs) =>
       d.GenFrom(pat, rhs)

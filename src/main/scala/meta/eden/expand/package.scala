@@ -50,18 +50,7 @@ package object expand {
     expansion.getOrElse(mdef)
   }
 
-  private object ExtractApply {
-    def unapply(tree: untpd.Tree): Option[(untpd.Tree, List[untpd.Tree], List[List[untpd.Tree]])] = tree match {
-      case TypeApply(fun, targs) =>
-        val Some((f, _, argss)) = unapply(fun)
-        Some((f, targs, argss))
-      case Apply(fun, args) =>
-        val Some((f, targs, argss)) = unapply(fun)
-        Some((f, targs, argss :+ args))
-      case _ =>
-        Some((tree, Nil, Nil))
-    }
-  }
+
 
   /** Expand def macros */
   def expandDef(tree: tpd.Tree)(implicit ctx: Context): untpd.Tree = tree match {

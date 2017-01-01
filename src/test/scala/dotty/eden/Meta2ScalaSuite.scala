@@ -2,23 +2,33 @@ package scala.meta.eden
 
 import scala.{meta => m}
 import dotty.tools.dotc._
-import ast.untpd
+import ast.untpd._
+import core.Constants._
+import core.Decorators._
 
 class Meta2ScalaSuite extends EdenSuite {
 
-  def syntactic(code: String, expect: untpd.Tree) = {
+  def syntactic(code: String, expectStr: String): Unit = {
+    val expect: Tree = expectStr
+    syntactic(code, expect)
+  }
+
+
+  def syntactic(code: String, expect: Tree): Unit = {
+    println(s"warning: approximate `$code` == `${expect.show}`")
     test(code) {
-      val mTree: m.Tree = code
-      var convertedTree: untpd.Tree = mTree
+      val dTree: Tree = code
+      val mTree: m.Tree = dTree
+      var convertedTree: Tree = mTree
       assert(expect.toString == convertedTree.toString)
     }
   }
 
   def syntactic(code: String, verbose: Boolean = false): Unit = {
     test(code) {
-      val dTree: untpd.Tree = code
-      val mTree: m.Tree = code
-      var convertedTree: untpd.Tree = null
+      val dTree: Tree = code
+      val mTree: m.Tree = dTree
+      var convertedTree: Tree = null
 
       try { convertedTree = mTree } finally {
         if (convertedTree == null || dTree.toString != convertedTree.toString || verbose)
@@ -119,22 +129,54 @@ class Meta2ScalaSuite extends EdenSuite {
   syntactic("(b, c, d) :+ a")
   syntactic("(b, c) +: a")
   syntactic("(b, c, d) +: a")
-  syntactic("a*")
-  syntactic("++a")
+  syntactic("a*", "a.*")
+  syntactic("++a", "++.a")
   syntactic("!a")
   syntactic("~a")
-  syntactic("a++")
+  syntactic("a++", "a.++")
   syntactic("a = b")
   syntactic("{ a = 1; b += 2 }")
   syntactic("{ }")
-  syntactic("()")
-  syntactic("(2)")
+  syntactic("()", Literal(Constant(())))
+  syntactic("(2)", "2")
   syntactic("(2, 4)")
   syntactic("a -> b")
-  syntactic("if (cond) a else b")
-  syntactic("if (cond) return a")
-  syntactic("while (a > 5) { println(a); a++; }")
-  syntactic("do { println(a); a++; } while (a > 5)")
+  syntactic(
+    "if (cond) a else b",
+    If(
+      Ident("cond".toTermName),
+      Ident("a".toTermName),
+      Ident("b".toTermName)
+    )
+  )
+  syntactic(
+    "if (cond) return a",
+    If(
+      Ident("cond".toTermName),
+      Return(Ident("a".toTermName), EmptyTree),
+      Literal(Constant(()))
+    )
+  )
+  syntactic(
+    "while (a > 5) { println(a); a++; }",
+    WhileDo(
+      InfixOp(Ident("a".toTermName), ">".toTermName, Literal(Constant(5))),
+      Block(
+        List(Apply(Ident("println".toTermName),List(Ident("a".toTermName)))),
+        Select(Ident("a".toTermName),"++".toTermName)
+      )
+    )
+  )
+  syntactic(
+    "do { println(a); a++; } while (a > 5)",
+    DoWhile(
+      Block(
+        List(Apply(Ident("println".toTermName),List(Ident("a".toTermName)))),
+        Select(Ident("a".toTermName),"++".toTermName)
+      ),
+      InfixOp(Ident("a".toTermName), ">".toTermName, Literal(Constant(5)))
+    )
+  )
   syntactic("return a")
   syntactic("new List(5)")
   syntactic("new A(5)(6)")
