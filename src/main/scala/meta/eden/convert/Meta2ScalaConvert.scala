@@ -67,7 +67,7 @@ class Meta2ScalaConvert(private var mode: Mode = TermMode, private var loc: Loc 
     mods.foldLeft(d.Modifiers()) { (modifiers, mod) =>
       mod match {
         case m.Mod.Annot(body) =>
-          modifiers.withAddedAnnotation(mod)
+          modifiers.withAddedAnnotation(body)
         case m.Mod.Private(within) =>
           val modifiers2 = within match {
             case m.Name.Indeterminate(name) => modifiers.withPrivateWithin(name.toTypeName)
@@ -140,10 +140,16 @@ class Meta2ScalaConvert(private var mode: Mode = TermMode, private var loc: Loc 
     case m.Term.Interpolate(m.Term.Name(id), parts, args) =>
       val thickets =
         for { (arg, part) <- args.zip(parts.take(args.size)) }
-          yield d.Thicket(arg, part)
+          yield {
+            val expr = (arg: d.Tree) match {
+              case tree: d.Ident => tree
+              case tree => d.Block(Nil, tree)
+            }
+            d.Thicket(part, expr)
+          }
       val segments =
         if (parts.size > args.size)
-          (parts.last: d.Tree) +: thickets
+          thickets :+ (parts.last: d.Tree)
         else thickets
       d.InterpolatedString(id.toTermName, segments.toList)
     // case m.Term.Xml(parts, args) =>
@@ -179,8 +185,8 @@ class Meta2ScalaConvert(private var mode: Mode = TermMode, private var loc: Loc 
       d.Typed(expr, tpe)
     case m.Term.Annotate(expr, annots) =>
       require(annots.size > 0)
-      val zero = d.Annotated(expr, annots.head)
-      annots.tail.foldLeft(zero) { (acc, annot) => d.Annotated(acc, annot) }
+      val zero = d.Annotated(expr, annots.head.body)
+      annots.tail.foldLeft(zero) { (acc, annot) => d.Annotated(acc, annot.body) }
     case m.Term.Tuple(args) =>
       d.Tuple(args)
     case m.Term.Block(stats) =>
@@ -193,7 +199,8 @@ class Meta2ScalaConvert(private var mode: Mode = TermMode, private var loc: Loc 
     case m.Term.Match(expr, cases) =>
       d.Match(expr, cases)
     case m.Term.TryWithCases(expr, cases, finallyp) =>
-      d.Try(expr, cases, finallyp)
+      val catches = if (cases.isEmpty) d.EmptyTree else d.Match(d.EmptyTree, cases)
+      d.ParsedTry(expr, catches, finallyp)
     case m.Term.TryWithTerm(expr, catchp, finallyp) =>
       d.ParsedTry(expr, catchp, finallyp)
     case m.Term.Function(params, body) =>
@@ -266,11 +273,10 @@ class Meta2ScalaConvert(private var mode: Mode = TermMode, private var loc: Loc 
     // case m.Type.Existential(tpe, stats) =>    // illegal in Dotty
     case m.Type.Annotate(tpe, annots) =>
       require(annots.size > 0)
-      val zero = d.Annotated(tpe, annots.head)
-      annots.tail.foldLeft(zero) { (acc, annot) => d.Annotated(acc, annot) }
+      val zero = d.Annotated(tpe, annots.head.body)
+      annots.tail.foldLeft(zero) { (acc, annot) => d.Annotated(acc, annot.body) }
     // case m.Type.Placeholder(bounds) =>   // TODO: ???
     case m.Type.Bounds(lo, hi) =>
-      require(lo.nonEmpty || hi.nonEmpty)
       d.TypeBoundsTree(lo, hi)
     case m.Type.Arg.ByName(tpe) =>
       d.ByNameTypeTree(tpe)
@@ -283,7 +289,7 @@ class Meta2ScalaConvert(private var mode: Mode = TermMode, private var loc: Loc 
         case m.Type.Name(name)  => name.toTypeName
       }
       val rhs = if (cbounds.size > 0) d.ContextBounds(tbounds, cbounds) else tbounds: d.Tree
-      d.TypeDef(name, d.PolyTypeTree(tparams, rhs)).withMods(mods).withFlags(Param)
+      d.TypeDef(scalaName, d.PolyTypeTree(tparams, rhs)).withMods(mods).withFlags(Param)
 
     case m.Pat.Var.Term(m.Term.Name(name)) =>
       d.Ident(name.toTermName)
@@ -294,7 +300,7 @@ class Meta2ScalaConvert(private var mode: Mode = TermMode, private var loc: Loc 
     case m.Pat.Bind(m.Pat.Var.Term(m.Term.Name(name)), rhs) =>
       d.Bind(name.toTermName, rhs)
     case m.Pat.Alternative(lhs, rhs) =>
-      d.Alternative(List(lhs, rhs))
+      d.Alternative(List(lhs : d.Tree, rhs : d.Tree))
     case m.Pat.Tuple(args) =>
       d.Tuple(args)
     case m.Pat.Extract(ref, targs, args) =>
@@ -310,10 +316,16 @@ class Meta2ScalaConvert(private var mode: Mode = TermMode, private var loc: Loc 
     case m.Pat.Interpolate(m.Term.Name(id), parts, args) =>
       val thickets =
         for { (arg, part) <- args.zip(parts.take(args.size)) }
-          yield d.Thicket(arg, part)
+          yield {
+            val expr = (arg: d.Tree) match {
+              case tree: d.Ident => tree
+              case tree => d.Block(Nil, tree)
+            }
+            d.Thicket(part, expr)
+          }
       val segments =
         if (parts.size > args.size)
-          (parts.last: d.Tree) +: thickets
+          thickets :+ (parts.last: d.Tree)
         else thickets
       d.InterpolatedString(id.toTermName, segments.toList)
     // case m.Pat.Xml(parts, args) =>       // illegal in Dotty
@@ -344,8 +356,8 @@ class Meta2ScalaConvert(private var mode: Mode = TermMode, private var loc: Loc 
     // case m.Pat.Type.Existential(tpe, stats) =>     // illegal in Dotty
     case m.Pat.Type.Annotate(tpe, annots) =>
       require(annots.size > 0)
-      val zero = d.Annotated(tpe, annots.head)
-      annots.tail.foldLeft(zero) { (acc, annot) => d.Annotated(acc, annot) }
+      val zero = d.Annotated(tpe, annots.head.body)
+      annots.tail.foldLeft(zero) { (acc, annot) => d.Annotated(acc, annot.body) }
     // case m.Pat.Type.Placeholder(bounds) =>         // TODO: ???
 
     case m.Decl.Val(mods, pats, tpe) =>
@@ -386,8 +398,9 @@ class Meta2ScalaConvert(private var mode: Mode = TermMode, private var loc: Loc 
         case _ =>
           d.PatDef(mods, pats, tpt, rhs: d.Tree)
       }
-    case m.Defn.Def(mods, m.Term.Name(name), tparams, paramss, tpe, body) =>
-      d.DefDef(name.toTermName, tparams, paramss, tpe, body : d.Tree).withMods(mods)
+    case m.Defn.Def(mods, m.Term.Name(name), tparams, paramss, tpOpt, body) =>
+      val tpt = if (tpOpt.isEmpty) d.TypeTree() else (tpOpt.get : d.Tree)
+      d.DefDef(name.toTermName, tparams, paramss, tpt, body : d.Tree).withMods(mods)
     // case m.Defn.Macro(mods, name, tparams, paramss, tpe, body) =>
     case m.Defn.Type(mods, m.Type.Name(name), tparams, body) =>
       if (tparams.size > 0)
@@ -395,12 +408,12 @@ class Meta2ScalaConvert(private var mode: Mode = TermMode, private var loc: Loc 
       else
         d.TypeDef(name.toTypeName, body).withMods(mods)
     case m.Defn.Class(mods, m.Type.Name(name), tparams, ctor, templ) =>
-      val scalaCtor: d.DefDef = if (tparams.size == 0) ctor else d.cpy.DefDef(ctor)(tparams = tparams)
-      val scalaTempl = d.cpy.Template(templ)(constr = scalaCtor)
+      val scalaCtor: d.DefDef = if (tparams.size == 0) ctor: d.DefDef else d.cpy.DefDef(ctor: d.DefDef)(tparams = tparams)
+      val scalaTempl = d.cpy.Template(templ: d.Template)(constr = scalaCtor)
       d.TypeDef(name.toTypeName, scalaTempl).withMods(mods)
     case m.Defn.Trait(mods, m.Type.Name(name), tparams, ctor, templ) =>
-      val scalaCtor: d.DefDef = if (tparams.size == 0) ctor else d.cpy.DefDef(ctor)(tparams = tparams)
-      val scalaTempl = d.cpy.Template(templ)(constr = scalaCtor)
+      val scalaCtor: d.DefDef = if (tparams.size == 0) ctor: d.DefDef else d.cpy.DefDef(ctor: d.DefDef)(tparams = tparams)
+      val scalaTempl = d.cpy.Template(templ : d.Template)(constr = scalaCtor)
       d.TypeDef(name.toTypeName, scalaTempl).withMods(mods).withFlags(Trait)
     case m.Defn.Object(mods, m.Term.Name(name), templ) =>
       d.ModuleDef(name.toTermName, templ).withMods(mods).withFlags(Module)
@@ -468,7 +481,11 @@ class Meta2ScalaConvert(private var mode: Mode = TermMode, private var loc: Loc 
       d.Thicket(d.Ident(name.toTermName), d.Ident(nme.WILDCARD))
 
     case m.Case(pat, cond, body) =>
-      d.CaseDef(pat, cond, body)
+      val scalaBody = (body: d.Tree) match {
+        case block: d.Block => block
+        case expr => d.Block(Nil, expr)
+      }
+      d.CaseDef(pat, cond, scalaBody)
 
     // case m.Source(stats) =>
   }) : d.Tree).from(tree)
