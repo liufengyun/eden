@@ -144,11 +144,11 @@ class plus {
 }
 
 object scope {
-  inline def is[T](a: Any): Any = meta {
+  inline def is[T](a: Any): Boolean = meta {
     q"$a.isInstanceOf[$T]"
   }
 
-  inline def both[S, T](a: Any): Any = meta {
+  inline def both[S, T](a: Any): Boolean = meta {
     q"$a.isInstanceOf[$S] && $a.isInstanceOf[$T]"
   }
 }

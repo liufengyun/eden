@@ -1,5 +1,5 @@
-lazy val metaVersion = "1.5.0.570"
-lazy val dottyVersion = "0.1.2-SNAPSHOT"
+lazy val metaVersion = "1.5.0.575"
+lazy val dottyVersion = "0.1.1-SNAPSHOT"
 
 lazy val common = Seq(
   resolvers ++= Seq(
@@ -17,7 +17,7 @@ lazy val edenSetting = Seq(
   libraryDependencies ++= Seq(
     "org.scalameta" %% "scalameta" % metaVersion,
     "org.scalatest" %% "scalatest" % "3.0.0" % "test",
-    "me.fengy" % "dotty_2.11" % dottyVersion
+    "ch.epfl.lamp" % "dotty_2.11" % dottyVersion
   ),
 
   credentials += Credentials(Path.userHome / ".sbt" / ".credentials"),
@@ -57,13 +57,12 @@ lazy val edenSetting = Seq(
 
 lazy val macrosSetting = Seq(
   scalacOptions := {
-    val edenClassPath = ((classDirectory in eden) in Compile).value
-    Seq("-toolcp", edenClassPath.toString) // "-Yplain-printer", "-Xprint:frontend,parser", "-Ylog:frontend",
+    Seq() // "-Yplain-printer", "-Xprint:frontend,parser", "-Ylog:frontend",
   },
 
   // Dotty version
   scalaVersion := dottyVersion,
-  scalaOrganization := "me.fengy",
+  scalaOrganization := "ch.epfl.lamp",
 
   // Dotty is compatible with Scala 2.11, as such you can use 2.11
   // binaries. However, when publishing - this version number should be set
@@ -80,7 +79,7 @@ lazy val macrosSetting = Seq(
     // actually 2.11.5, published under ch.epfl.lamp)
     "ch.epfl.lamp" % "scala-library_2.11" % "0.1-SNAPSHOT",
     // Compiler on tool path
-    "me.fengy" % "dotty_2.11" % dottyVersion % "scala-tool"
+    "ch.epfl.lamp" % "dotty_2.11" % dottyVersion % "scala-tool"
   ),
 
   // Bridge which allows REPL and compilation via dotty

@@ -23,7 +23,7 @@ package object expand {
 
   /** Expand annotation macros */
   def expandAnnot(mdef: untpd.MemberDef)(implicit ctx: Context): untpd.Tree = {
-    val ann = mdef.mods.annotations.filter(isAnnotMacros).headOption
+    val ann = mdef.mods.annotations.filter(macros.isAnnotMacros).headOption
     val expansion = ann.flatMap {
       case ann @ Apply(Select(New(tpt), init), _) =>
         val tpdClass = ctx.typer.typedAheadType(tpt)
@@ -78,23 +78,5 @@ package object expand {
       toScala(mResult)
     case _ =>
       tree
-  }
-
-  def isAnnotMacros(ann: untpd.Tree)(implicit ctx: Context): Boolean = {
-    import Decorators._
-    import StdNames._
-
-    val symbol = ctx.typer.typedAheadAnnotation(ann)
-    if (!symbol.exists) return false
-
-    val annMethod = symbol.info.decl(nme.apply)
-    val annImplMethod = symbol.owner.info
-      .decl((symbol.name + "$inline").toTermName)
-      .info
-      .decl(nme.apply)
-
-    val macrosAnnotType = ctx.requiredClassRef("scala.annotation.StaticAnnotation")
-
-    symbol.typeRef <:< macrosAnnotType && annMethod.exists && annImplMethod.exists
   }
 }
