@@ -1,4 +1,4 @@
-lazy val metaVersion = "1.5.0.575"
+lazy val metaVersion = "1.5.0.585"
 lazy val dottyVersion = "0.1.1-SNAPSHOT"
 
 lazy val common = Seq(

@@ -37,23 +37,6 @@ object Quote {
   }
 
   private def literal(value: Any): untpd.Tree = untpd.Literal(Constant(value))
-
-  // TODO: move these two methods to scala.meta
-  // seqSeqApply
-  def apply(fun: m.Term, argss: List[List[m.Term]]): m.Term = argss match {
-    case args :: rest => rest.foldLeft(m.Term.Apply(fun, args)) { (acc, args) => m.Term.Apply(acc, args) }
-    case _ => m.Term.Apply(fun, Nil)
-  }
-
-  // seqSeqUnapply
-  def unapply(call: m.Term.Apply): Option[(m.Term, Seq[Seq[m.Term.Arg]])] = {
-    def recur(acc: Seq[Seq[m.Term.Arg]], term: m.Term): (m.Term, Seq[Seq[m.Term.Arg]])  = term match {
-      case m.Term.Apply(fun, args) => recur(args +: acc, fun) // inner-most is in the front
-      case fun => (fun, acc)
-    }
-
-    Some(recur(Nil, call))
-  }
 }
 
 /** Lift scala.meta trees as Dotty trees */
@@ -61,9 +44,7 @@ class Quote(tree: untpd.Tree, args: List[untpd.Tree], isTerm: Boolean = true)(im
 
   import Quote._
 
-  val metaTreeType = ctx.requiredClassRef("scala.meta.Tree")
   val seqType = ctx.requiredClassRef("scala.collection.immutable.Seq")
-  val optionType = ctx.requiredClassRef("scala.Option")
   val metaLiftType = ctx.requiredClassRef("scala.meta.quasiquotes.Lift")
   val metaUnliftType = ctx.requiredClassRef("scala.meta.quasiquotes.Unlift")
 
@@ -167,7 +148,7 @@ class Quote(tree: untpd.Tree, args: List[untpd.Tree], isTerm: Boolean = true)(im
 
     def quasiType: Type = {
       var inferred = quasi.pt.toTpe.wrap(expectedRank)
-      if (optional) inferred = optionType.appliedTo(inferred)
+      if (optional) inferred = defn.OptionType.appliedTo(inferred)
       inferred
     }
 
@@ -176,8 +157,8 @@ class Quote(tree: untpd.Tree, args: List[untpd.Tree], isTerm: Boolean = true)(im
       arg match {
         case Typed(_, tp) => ctx.typer.typedType(tp).tpe
         case _ =>
-          var inferred = metaTreeType.wrap(expectedRank)
-          if (optional) inferred = optionType.appliedTo(inferred)
+          var inferred = defn.MetaTreeType.wrap(expectedRank)
+          if (optional) inferred = defn.OptionType.appliedTo(inferred)
           inferred
       }
     }
@@ -239,7 +220,7 @@ class Quote(tree: untpd.Tree, args: List[untpd.Tree], isTerm: Boolean = true)(im
       // magic happens here with ...$args
       args match {
         case Seq(quasi: Quasi) if quasi.rank == 2 =>
-          select("scala.meta.eden.quasiquote.Quote").appliedTo(lift(fun), liftQuasi(quasi))
+          select("scala.meta.internal.ast.Helpers.TermApply").appliedTo(lift(fun), liftQuasi(quasi))
         case _ =>
           select("scala.meta.Term.Apply").appliedTo(lift(fun), liftSeq(args))
       }

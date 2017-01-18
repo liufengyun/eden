@@ -10,12 +10,12 @@ import ast.Trees._
 import Flags._
 import Types._
 import Contexts.Context
-import Symbols._
+import Symbols.{defn => defns, _}
 import Decorators._
 import Annotations._
 import Constants._
 
-/** Transform macros definitions
+/** Transform macro definitions
  *
  *  1. Macro definition is transformed from:
  *
@@ -40,16 +40,6 @@ class MacrosTransform extends MiniPhaseTransform {
 
   import ast.tpd._
 
-  private var _metaPackageObjSymbol: Symbol = null
-
-  def metaSymbol(implicit ctx: Context) = {
-    if (_metaPackageObjSymbol != null) _metaPackageObjSymbol
-    else {
-      _metaPackageObjSymbol = ctx.requiredModule("scala.meta.package")
-      _metaPackageObjSymbol
-    }
-  }
-
   override def phaseName = "macrosTransform"
 
   override def transformTypeDef(tree: TypeDef)(implicit ctx: Context, info: TransformerInfo): Tree = {
@@ -60,7 +50,7 @@ class MacrosTransform extends MiniPhaseTransform {
     val macros = template.body.filter {
       case mdef : DefDef =>
         val rhsValid = mdef.rhs match {
-          case Apply(Select(meta, nme.apply), _) => meta.symbol == metaSymbol
+          case Apply(fun, _) => fun.symbol == defns.Meta
           case _ => false
         }
 
@@ -72,7 +62,7 @@ class MacrosTransform extends MiniPhaseTransform {
 
     val (implObj, implMethods, moduleSym) = createImplObject(tree.symbol, macros)
 
-    // modify macros body and flags
+    // modify macro body and flags
     val macrosNew = macros.map { m =>
       val mdef = cpy.DefDef(m)(rhs = Literal(Constant(null)))
       mdef.symbol.removeAnnotation(ctx.definitions.BodyAnnot)
@@ -115,7 +105,7 @@ class MacrosTransform extends MiniPhaseTransform {
       if (wtp.isInstanceOf[MethodType]) resultType(wtp)
       else { // PolyType
         val names = wtp.typeParams.map(_.paramName.toTermName)
-        val types = names.map(x => ctx.requiredClassRef("scala.meta.Type"))
+        val types = names.map(x => defns.MetaTypeType)
         resultType(MethodType(names, types, wtp.resultType))
       }
 
@@ -129,10 +119,9 @@ class MacrosTransform extends MiniPhaseTransform {
     val toSyms   = impl.vparamss.drop(1).flatten.map(_.symbol)
 
     // replace `this` with `prefix` and param refs with original refs
-    val metaSym = ctx.requiredClass("scala.meta.Term")
     val mapper = new TreeMap {
       override def transform(tree: Tree)(implicit ctx: Context): Tree = tree match {
-        case tree: This if tree.tpe.isRef(metaSym) =>
+        case tree: This if tree.tpe.isRef(defns.MetaTerm) =>
           ref(prefixSym)
         case tree: Ident =>
           tree.removeAttachment(macros.OriginSymOfTree) match {
@@ -150,13 +139,13 @@ class MacrosTransform extends MiniPhaseTransform {
     cpy.DefDef(impl)(rhs = rhs2)
   }
 
-  /** create A$inline to hold all macros implementations */
+  /** create A$inline to hold all macro implementations */
   def createImplObject(current: Symbol, macros: List[DefDef])(implicit ctx: Context): (Thicket, List[DefDef], Symbol) = {
     val moduleName = (current.name + "$inline").toTermName
     val moduleSym = ctx.newCompleteModuleSymbol(
       current.owner, moduleName,
       Synthetic, Synthetic,
-      defn.ObjectType :: Nil, Scopes.newScope,
+      defns.ObjectType :: Nil, Scopes.newScope,
       assocFile = current.asClass.assocFile).entered
 
     val methods = macros.map(m => createImplMethod(m, moduleSym.moduleClass))
