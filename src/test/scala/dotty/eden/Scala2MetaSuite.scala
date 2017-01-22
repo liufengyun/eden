@@ -187,6 +187,8 @@ class Scala2MetaSuite extends EdenSuite {
   syntactic("val a: Int")
   syntactic("val a, b: Int")
   syntactic("val a, b = 3")
+  syntactic("val Some(a), Some(b) = Some(3)")
+  syntactic("val a, Some(b) = Some(3)")
   syntactic("val a, _ = 3")
   syntactic("val Some(Some(x)) = a")
   syntactic("""val q"object $name { ..$stats }" = q"object Test { println(1024) }"""")
