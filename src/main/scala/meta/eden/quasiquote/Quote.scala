@@ -44,9 +44,7 @@ class Quote(tree: untpd.Tree, args: List[untpd.Tree], isTerm: Boolean = true)(im
 
   import Quote._
 
-  val metaTreeType = ctx.requiredClassRef("scala.meta.Tree")
   val seqType = ctx.requiredClassRef("scala.collection.immutable.Seq")
-  val optionType = ctx.requiredClassRef("scala.Option")
   val metaLiftType = ctx.requiredClassRef("scala.meta.quasiquotes.Lift")
   val metaUnliftType = ctx.requiredClassRef("scala.meta.quasiquotes.Unlift")
 
@@ -150,7 +148,7 @@ class Quote(tree: untpd.Tree, args: List[untpd.Tree], isTerm: Boolean = true)(im
 
     def quasiType: Type = {
       var inferred = quasi.pt.toTpe.wrap(expectedRank)
-      if (optional) inferred = optionType.appliedTo(inferred)
+      if (optional) inferred = defn.OptionType.appliedTo(inferred)
       inferred
     }
 
@@ -159,8 +157,8 @@ class Quote(tree: untpd.Tree, args: List[untpd.Tree], isTerm: Boolean = true)(im
       arg match {
         case Typed(_, tp) => ctx.typer.typedType(tp).tpe
         case _ =>
-          var inferred = metaTreeType.wrap(expectedRank)
-          if (optional) inferred = optionType.appliedTo(inferred)
+          var inferred = defn.MetaTreeType.wrap(expectedRank)
+          if (optional) inferred = defn.OptionType.appliedTo(inferred)
           inferred
       }
     }
