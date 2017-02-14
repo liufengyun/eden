@@ -17,12 +17,15 @@ lazy val edenSetting = Seq(
   libraryDependencies ++= Seq(
     "org.scalameta" %% "scalameta" % metaVersion,
     "org.scalatest" %% "scalatest" % "3.0.0" % "test",
-    "me.fengy" % "dotty_2.11" % dottyVersion
+    "me.fengy" % "dotty_2.11" % dottyVersion % "provided"
   ),
 
   credentials += Credentials(Path.userHome / ".sbt" / ".credentials"),
 
-  publishMavenStyle := true,
+  test in assembly := {},
+  assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false),
+
+    publishMavenStyle := true,
 
   publishTo := {
     val nexus = "https://oss.sonatype.org/"
