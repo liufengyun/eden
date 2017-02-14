@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+set -x
+
+OPT="-L eden-assembly-0.1.1.jar"
+
+sbt assembly
+cp eden/target/scala-2.11/eden-assembly-0.1.1.jar .
+
+dotc $OPT examples/main.scala
+dotc $OPT examples/main-test.scala
+dotr Test
+
+dotc $OPT examples/xsd.scala
+dotc $OPT examples/xsd-test.scala
+dotr Test
+
+dotc $OPT examples/is.scala
+dotc $OPT examples/is-test.scala
+dotr Test
