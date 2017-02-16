@@ -118,7 +118,7 @@ class Scala2MetaMapping(var mode: Mode, var loc: Loc) {
   }
 
   object TermInfixOp {
-    def unapply(tree: InfixOp): Option[(Tree, TermName, List[Tree])] = {
+    def unapply(tree: InfixOp): Option[(Tree, Ident, List[Tree])] = {
       if (loc != ExprLoc || mode != TermMode) return None
 
       val args = tree.right match {
@@ -126,21 +126,21 @@ class Scala2MetaMapping(var mode: Mode, var loc: Loc) {
         case _ => List(tree.right)
       }
 
-      Some((tree.left, tree.op.asTermName, args))
+      Some((tree.left, tree.op, args))
     }
   }
 
   object TermPostfixOp {
-    def unapply(tree: PostfixOp): Option[(Tree, TermName)] = {
-      if (mode != TermMode || loc != ExprLoc || tree.op == nme.WILDCARD) return None
-      Some((tree.od, tree.op.asTermName))
+    def unapply(tree: PostfixOp): Option[(Tree, Ident)] = {
+      if (mode != TermMode || loc != ExprLoc || tree.op.name == nme.WILDCARD) return None
+      Some((tree.od, tree.op))
     }
   }
 
   object TermPrefixOp {
-    def unapply(tree: PrefixOp): Option[(TermName, Tree)] = {
+    def unapply(tree: PrefixOp): Option[(Ident, Tree)] = {
       if (mode != TermMode || loc != ExprLoc) return None
-      Some((tree.op.asTermName, tree.od))
+      Some((tree.op, tree.od))
     }
   }
 
@@ -241,10 +241,10 @@ class Scala2MetaMapping(var mode: Mode, var loc: Loc) {
   }
 
   object TypeInfixOp {
-    def unapply(tree: InfixOp): Option[(Tree, TypeName, Tree)] = {
+    def unapply(tree: InfixOp): Option[(Tree, Ident, Tree)] = {
       if (mode != TypeMode || loc == PatLoc ||
-        tree.op == tpnme.raw.BAR || tree.op == tpnme.raw.AMP) return None
-      Some((tree.left, tree.op.asTypeName, tree.right))
+        tree.op.name == tpnme.raw.BAR || tree.op.name == tpnme.raw.AMP) return None
+      Some((tree.left, tree.op, tree.right))
     }
   }
 
@@ -351,7 +351,7 @@ class Scala2MetaMapping(var mode: Mode, var loc: Loc) {
   }
 
   object PatInfixExtract {
-    def unapply(tree: InfixOp): Option[(Tree, TermName, List[Tree])] = {
+    def unapply(tree: InfixOp): Option[(Tree, Ident, List[Tree])] = {
       if (mode != TermMode || loc != PatLoc) return None
 
       val args = tree.right match {
@@ -359,7 +359,7 @@ class Scala2MetaMapping(var mode: Mode, var loc: Loc) {
         case _ => List(tree.right)
       }
 
-      Some((tree.left, tree.op.asTermName, args))
+      Some((tree.left, tree.op, args))
     }
   }
 
@@ -407,10 +407,10 @@ class Scala2MetaMapping(var mode: Mode, var loc: Loc) {
   }
 
   object PatTypeInfixOp {
-    def unapply(tree: InfixOp): Option[(Tree, TypeName, Tree)] = {
+    def unapply(tree: InfixOp): Option[(Tree, Ident, Tree)] = {
       if (mode != TypeMode || loc != PatLoc ||
         tree.op == tpnme.raw.BAR || tree.op == tpnme.raw.AMP) return None
-      Some((tree.left, tree.op.asTypeName, tree.right))
+      Some((tree.left, tree.op, tree.right))
     }
   }
 

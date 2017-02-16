@@ -58,11 +58,11 @@ class Quote(tree: untpd.Tree, args: List[untpd.Tree], isTerm: Boolean = true)(im
           if (prefix.isEmpty) loop(rest, liftQuasi(quasi), Nil)
           else loop(rest, prefix.foldRight(liftQuasi(quasi))((curr, acc) => {
             val currElement = lift(curr)
-            untpd.InfixOp(currElement, "+:".toTermName, acc)
+            untpd.InfixOp(currElement, untpd.Ident("+:".toTermName), acc)
           }), Nil)
         } else {
           require(prefix.isEmpty)
-          if (isTerm) loop(rest, untpd.InfixOp(acc, "++".toTermName, liftQuasi(quasi)), Nil)
+          if (isTerm) loop(rest, untpd.InfixOp(acc, untpd.Ident("++".toTermName), liftQuasi(quasi)), Nil)
           else {
             ctx.error(m.internal.parsers.Messages.QuasiquoteAdjacentEllipsesInPattern(quasi.rank), tree.pos)
             untpd.EmptyTree
@@ -72,7 +72,7 @@ class Quote(tree: untpd.Tree, args: List[untpd.Tree], isTerm: Boolean = true)(im
         if (acc.isEmpty) loop(rest, acc, prefix :+ other)
         else {
           require(prefix.isEmpty)
-          loop(rest, untpd.InfixOp(acc, ":+".toTermName, lift(other)), Nil)
+          loop(rest, untpd.InfixOp(acc, untpd.Ident(":+".toTermName), lift(other)), Nil)
         }
       case Nil =>
         if (acc.isEmpty)

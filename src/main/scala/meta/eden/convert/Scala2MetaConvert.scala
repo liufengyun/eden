@@ -157,18 +157,18 @@ class Scala2MetaConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Contex
       m.Term.ApplyType(mfun, mtargs)
 
     case u.TermInfixOp(left, op, args) =>
-      val mop = m.Term.Name(op.show)
+      val mop = op.toMTree[m.Term.Name]
       val mleft = left.toMTree[m.Term]
       val mright = args.map(toMTree[m.Term])
       m.Term.ApplyInfix(mleft, mop, Nil, mright)
 
     case u.TermPostfixOp(left, op) =>
-      val mop = m.Term.Name(op.show)
+      val mop = op.toMTree[m.Term.Name]
       val mleft = left.toMTree[m.Term]
       m.Term.Select(mleft, mop)
 
     case u.TermPrefixOp(op, right) =>
-      val mop = m.Term.Name(op.show)
+      val mop = op.toMTree[m.Term.Name]
       val mright = right.toMTree[m.Term]
       m.Term.ApplyUnary(mop, mright)
 
@@ -283,7 +283,7 @@ class Scala2MetaConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Contex
       m.Type.Apply(mtpt, margs)
 
     case u.TypeInfixOp(lhs, op, rhs) =>
-      val mop = m.Type.Name(op.show)
+      val mop = u.withs(TypeMode, ExprLoc) { lhs.toMTree[m.Type.Name] }
       val mlhs = u.withs(TypeMode, ExprLoc) { lhs.toMTree[m.Type] }
       val mrhs = u.withs(TypeMode, ExprLoc) { rhs.toMTree[m.Type] }
       m.Type.ApplyInfix(mlhs, mop, mrhs)
@@ -364,7 +364,7 @@ class Scala2MetaConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Contex
       m.Pat.Extract(mref, mtargs, margs)
 
     case u.PatInfixExtract(left, op, args) =>
-      val mop = m.Term.Name(op.show)
+      val mop = op.toMTree[m.Term.Name]
       val mleft = left.toMTree[m.Pat]
       val margs = args.map(toMTree[m.Pat.Arg])
       m.Pat.ExtractInfix(mleft, mop, margs)
@@ -411,7 +411,7 @@ class Scala2MetaConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Contex
       m.Pat.Type.Wildcard()
 
     case u.PatTypeInfixOp(lhs, op, rhs) =>
-      val mop = m.Type.Name(op.show)
+      val mop = op.toMTree[m.Type.Name]
       val mlhs = lhs.toMTree[m.Pat.Type]
       val mrhs = rhs.toMTree[m.Pat.Type]
       m.Pat.Type.ApplyInfix(mlhs, mop, mrhs)
