@@ -80,7 +80,8 @@ lazy val macrosSetting = Seq(
 
     // Dotty depends on stdlib 2.11.5, best use that too (0.1-SNAPSHOT is
     // actually 2.11.5, published under ch.epfl.lamp)
-    "ch.epfl.lamp" % "scala-library_2.11" % "0.1-SNAPSHOT"
+    "ch.epfl.lamp" % "scala-library_2.11" % "0.1-SNAPSHOT",
+    "me.fengy" % "dotty_2.11" % dottyVersion % "scala-tool"
   ),
 
   // Bridge which allows REPL and compilation via dotty
