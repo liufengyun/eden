@@ -60,8 +60,7 @@ lazy val edenSetting = Seq(
 
 lazy val macrosSetting = Seq(
   scalacOptions := {
-    val edenClassPath = ((classDirectory in eden) in Compile).value
-    Seq("-toolcp", edenClassPath.toString) // "-Yplain-printer", "-Xprint:frontend,parser", "-Ylog:frontend",
+    Seq() // "-Yplain-printer", "-Xprint:frontend,parser", "-Ylog:frontend",
   },
 
   // Dotty version
@@ -81,9 +80,7 @@ lazy val macrosSetting = Seq(
 
     // Dotty depends on stdlib 2.11.5, best use that too (0.1-SNAPSHOT is
     // actually 2.11.5, published under ch.epfl.lamp)
-    "ch.epfl.lamp" % "scala-library_2.11" % "0.1-SNAPSHOT",
-    // Compiler on tool path
-    "me.fengy" % "dotty_2.11" % dottyVersion % "scala-tool"
+    "ch.epfl.lamp" % "scala-library_2.11" % "0.1-SNAPSHOT"
   ),
 
   // Bridge which allows REPL and compilation via dotty
