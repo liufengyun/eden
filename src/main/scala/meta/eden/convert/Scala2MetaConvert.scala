@@ -283,7 +283,7 @@ class Scala2MetaConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Contex
       m.Type.Apply(mtpt, margs)
 
     case u.TypeInfixOp(lhs, op, rhs) =>
-      val mop = u.withs(TypeMode, ExprLoc) { lhs.toMTree[m.Type.Name] }
+      val mop = u.withs(TypeMode, ExprLoc) { op.toMTree[m.Type.Name] }
       val mlhs = u.withs(TypeMode, ExprLoc) { lhs.toMTree[m.Type] }
       val mrhs = u.withs(TypeMode, ExprLoc) { rhs.toMTree[m.Type] }
       m.Type.ApplyInfix(mlhs, mop, mrhs)
@@ -364,7 +364,7 @@ class Scala2MetaConvert(initialMode: Mode, initialLoc: Loc)(implicit ctx: Contex
       m.Pat.Extract(mref, mtargs, margs)
 
     case u.PatInfixExtract(left, op, args) =>
-      val mop = op.toMTree[m.Term.Name]
+      val mop = u.withLoc(ExprLoc) { op.toMTree[m.Term.Name] }
       val mleft = left.toMTree[m.Pat]
       val margs = args.map(toMTree[m.Pat.Arg])
       m.Pat.ExtractInfix(mleft, mop, margs)

@@ -146,7 +146,7 @@ class Scala2MetaMapping(var mode: Mode, var loc: Loc) {
 
   object TermEta {
     def unapply(tree: PostfixOp): Option[Tree] = {
-      if (mode != TermMode || loc != ExprLoc || tree.op != nme.WILDCARD) return None
+      if (mode != TermMode || loc != ExprLoc || tree.op.name != nme.WILDCARD) return None
       Some(tree.od)
     }
   }
@@ -253,7 +253,7 @@ class Scala2MetaMapping(var mode: Mode, var loc: Loc) {
       if (mode != TypeMode || loc == PatLoc) return None
 
       tree match {
-        case t: InfixOp  if t.op == tpnme.raw.BAR  =>
+        case t: InfixOp  if t.op.name == tpnme.raw.BAR  =>
           Some((t.left, t.right))
         case t: OrTypeTree =>
           Some((t.left, t.right))
@@ -267,7 +267,7 @@ class Scala2MetaMapping(var mode: Mode, var loc: Loc) {
     def unapply(tree: Tree): Option[(Tree, Tree)] = {
       if (mode != TypeMode || loc == PatLoc) return None
       tree match {
-        case t: InfixOp  if t.op == tpnme.raw.AMP  =>
+        case t: InfixOp  if t.op.name == tpnme.raw.AMP  =>
           Some((t.left, t.right))
         case t: AndTypeTree =>
           Some((t.left, t.right))
@@ -329,7 +329,7 @@ class Scala2MetaMapping(var mode: Mode, var loc: Loc) {
       if (mode != TypeMode || loc != ParamLoc) return None
 
       tree match {
-        case PostfixOp(tree, nme.raw.STAR) => Some(tree)
+        case PostfixOp(tree, id: Ident) if id.name == nme.raw.STAR => Some(tree)
         case _ => None
       }
     }
@@ -409,21 +409,21 @@ class Scala2MetaMapping(var mode: Mode, var loc: Loc) {
   object PatTypeInfixOp {
     def unapply(tree: InfixOp): Option[(Tree, Ident, Tree)] = {
       if (mode != TypeMode || loc != PatLoc ||
-        tree.op == tpnme.raw.BAR || tree.op == tpnme.raw.AMP) return None
+        tree.op.name == tpnme.raw.BAR || tree.op.name == tpnme.raw.AMP) return None
       Some((tree.left, tree.op, tree.right))
     }
   }
 
   object PatTypeOr {
     def unapply(tree: InfixOp): Option[(Tree, Tree)] = {
-      if (mode != TypeMode || loc != PatLoc || tree.op != tpnme.raw.BAR) return None
+      if (mode != TypeMode || loc != PatLoc || tree.op.name != tpnme.raw.BAR) return None
       Some((tree.left, tree.right))
     }
   }
 
   object PatTypeAnd {
     def unapply(tree: InfixOp): Option[(Tree, Tree)] = {
-      if (mode != TypeMode || loc != PatLoc || tree.op != tpnme.raw.AMP) return None
+      if (mode != TypeMode || loc != PatLoc || tree.op.name != tpnme.raw.AMP) return None
       Some((tree.left, tree.right))
     }
   }
