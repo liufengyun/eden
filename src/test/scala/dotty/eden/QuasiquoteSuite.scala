@@ -1,9 +1,11 @@
+package scala.meta.eden
+
+import org.scalatest.FunSuite
 import scala.collection.immutable.Seq
 import scala.meta._
 import scala.meta.dialects.Dotty
-import Decorators._
 
-class QuasiquoteSuite extends TestSuite {
+class QuasiquoteSuite extends FunSuite {
   test("param\"${name(index)} : $tp\"") {
     val name = Term.Name("name")
     val tp = t"X"
