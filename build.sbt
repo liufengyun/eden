@@ -10,7 +10,7 @@ lazy val common = Seq(
 
 lazy val edenSetting = Seq(
   name := "eden",
-  version := "0.1.1",
+  version := "0.1.2",
   organization := "me.fengy",
   scalaVersion := "2.11.8",
 
@@ -24,8 +24,12 @@ lazy val edenSetting = Seq(
 
   test in assembly := {},
   assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false),
+  artifact in (Compile, assembly) := {
+    val art = (artifact in (Compile, assembly)).value
+    art.copy(`classifier` = Some("assembly"))
+  },
 
-    publishMavenStyle := true,
+  publishMavenStyle := true,
 
   publishTo := {
     val nexus = "https://oss.sonatype.org/"
@@ -56,7 +60,8 @@ lazy val edenSetting = Seq(
       </developer>
     </developers>
   )
-) ++ common
+) ++ common ++ addArtifact(artifact in (Compile, assembly), assembly)
+
 
 lazy val macrosSetting = Seq(
   scalacOptions := {
