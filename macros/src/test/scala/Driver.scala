@@ -6,6 +6,7 @@ object Driver {
   def main(args: Array[String]): Unit = {
     // setup tests
     new MacrosTest
+    new QuasiquoteSuite
 
     var success = false
     var total = 0
